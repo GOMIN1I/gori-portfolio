@@ -1,4 +1,4 @@
-/* The exhibit layer: one living halftone stage that changes colour per world, a film frame,
+/* The exhibit layer: one living halftone stage that changes colour per world,
    smooth scroll, a fly-through the colon, chapters, and scroll-driven motion. */
 (() => {
   'use strict';
@@ -157,23 +157,6 @@ void main(){
     walk(el);
   }
 
-  /* ---------------- frame label ---------------- */
-  const RU = { work: 'работы', 'refund case': 'кейс про возвраты', experience: 'опыт', tools: 'инструменты', questions: 'вопросы', contact: 'контакты' };
-  const frameN = $('.frame__n'), frameSep = $('.frame__sep'), frameName = $('.frame__name'), frameBar = $('.frame__bar');
-  const labelled = $$('main [data-label], footer[data-label]');
-  let labelEl = null;
-  function setLabel(sec) {
-    if (!frameName || sec === labelEl) return;
-    labelEl = sec;
-    const ru = html.lang === 'ru';
-    let n, name;
-    if (sec.classList.contains('chapter')) { n = ''; name = $('.chapter__kick', sec).textContent.trim(); }
-    else { n = String(labelled.indexOf(sec) + 1).padStart(2, '0'); name = sec.dataset.label; if (ru && RU[name]) name = RU[name]; }
-    const apply = () => { frameN.textContent = n; frameSep.hidden = !n; frameName.textContent = name; };
-    if (hasG && !reduce) G.timeline().to('.frame__label', { opacity: 0, y: 6, duration: 0.18 }).add(apply).to('.frame__label', { opacity: 1, y: 0, duration: 0.3, ease: 'expo.out' });
-    else apply();
-  }
-
   /* ---------------- set-up once the page scripts have run ---------------- */
   let ready = false;
   const scrubs = [];
@@ -192,7 +175,7 @@ void main(){
     ready = true;
     if (!hasG || reduce) {
       // still switch worlds and labels, without motion
-      const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { STAGE.world(e.target.dataset.world); setLabel(e.target); } }), { rootMargin: '-50% 0px -49% 0px' });
+      const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { STAGE.world(e.target.dataset.world); } }), { rootMargin: '-50% 0px -49% 0px' });
       $$('[data-world]').forEach(s => io.observe(s));
       return;
     }
@@ -270,9 +253,8 @@ void main(){
     /* worlds and labels */
     $$('[data-world]').forEach(sec => ST.create({
       trigger: sec, start: sec.classList.contains('chapter') ? 'top 18%' : 'top 55%', end: 'bottom 55%',
-      onToggle: s => { if (s.isActive && !html.classList.contains('is-intro')) { STAGE.world(sec.dataset.world); setLabel(sec); } }
+      onToggle: s => { if (s.isActive && !html.classList.contains('is-intro')) { STAGE.world(sec.dataset.world); } }
     }));
-    ST.create({ start: 0, end: 'max', onUpdate: s => frameBar && frameBar.style.setProperty('--p', s.progress.toFixed(4)) });
 
     /* headings rise word by word */
     $$('main .h2, .foot .h2').forEach(h => {
@@ -342,16 +324,14 @@ void main(){
     /* footer mark: a slow push in */
     G.fromTo('.foot__mark', { scale: 0.9, y: 40 }, { scale: 1, y: 0, ease: 'none', scrollTrigger: { trigger: '.foot__mark', start: 'top bottom', end: 'top 55%', scrub: true } });
 
-    if (labelled[0]) setLabel(labelled[0]);
     ST.refresh();
   }
 
   document.addEventListener('gori:lang', () => {
     if (!ready || !hasG || reduce) return;
-    // new copy arrived: keep heads visible, rebuild the reading scrub, refresh the frame label
+    // new copy arrived: keep heads visible, rebuild the reading scrub
     $$('main .h2, .foot .h2').forEach(h => split(h));
     makeScrubs();
-    const cur = labelEl; labelEl = null; if (cur) setLabel(cur);
     ST.refresh();
   });
 

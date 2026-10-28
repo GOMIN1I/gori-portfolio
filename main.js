@@ -432,7 +432,6 @@
     const guess = lang === 'ru' || /^(ru|be|uk|kk)\b/i.test(navigator.language || '') ? 'ru' : 'en';
     opts.forEach(b => { b.classList.toggle('is-guess', b.dataset.pickLang === guess); b.classList.remove('is-picked'); });
     intro.classList.add('is-asking');
-    $$('.ichrome__scene', intro).forEach(s => { s.style.opacity = s.dataset.scene === '0' ? 1 : 0; });
     gsap.set(scene, { autoAlpha: 1, y: 0, filter: 'none' });
     scene.classList.add('is-live');
     const chars = lines.map(splitWords);
@@ -503,7 +502,6 @@
       opts.forEach(b => on.forEach(([ev, fn]) => b.removeEventListener(ev, fn)));
       intro.classList.remove('is-asking');
       scene.classList.remove('is-live');
-      $$('.ichrome__scene', intro).forEach(s => { s.style.opacity = ''; });
     }
     const first = opts.find(b => b.dataset.pickLang === guess);
     setTimeout(() => { if (!picked) first.focus({ preventScroll: true }); }, reduce ? 0 : 900);
@@ -520,7 +518,6 @@
     document.body.style.overflow = 'hidden';
     const scenes = $$('.iscene', intro);
     gsap.set(scenes, { autoAlpha: 0, y: 0 });
-    gsap.set('.ichrome__scene', { opacity: 0 });
     if (!askLang) { playFilm(); return; }
     asking = askLanguage(() => {
       asking = null;
@@ -544,7 +541,7 @@
     gsap.set('.iscene__head, .ipanel', { opacity: 1 });
     gsap.set('.irule', { scaleX: 0 });
     gsap.set('.iwipe', { scale: 0 });
-    gsap.set('.iask__cue span, .iask__notyet, .ichrome__scene', { opacity: 0 });
+    gsap.set('.iask__cue span, .iask__notyet', { opacity: 0 });
     gsap.set('.ipanel__rows li', { opacity: 0 });
     $$('.ipanel__rows li').forEach(li => li.classList.remove('is-hot'));
     sAsk.classList.remove('is-live');
@@ -554,14 +551,13 @@
       gsap.set(el, { x: 0, y: 0, rotation: 0, scale: 0, opacity: 1, transform: 'none' });
       return { el, x, y, r };
     });
-    const label = n => () => $$('.ichrome__scene', intro).forEach(s => gsap.to(s, { opacity: +s.dataset.scene === n ? 1 : 0, duration: 0.3 }));
     const world = (w, instant) => () => stage().world(w, instant);
     const rise = { opacity: 0, y: 46, filter: 'blur(6px)' }, risen = { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.8, ease: 'expo.out' };
 
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
     introTl = tl; if (window.GORI_DEBUG) window.__introTl = tl;
     // 1 · the mark draws as an outline, fills, the colon lands, the headline rises with the tiles
-    tl.set(sMeet, { autoAlpha: 1 }, 0).call(label(1), null, 0)
+    tl.set(sMeet, { autoAlpha: 1 }, 0)
       .to(outline, { strokeDashoffset: 0, duration: 1.3, stagger: 0.12, ease: 'power2.inOut' }, 0.1)
       .to('.imark__fill', { opacity: 1, duration: 0.45 }, 1.35)
       .to(outline, { opacity: 0, duration: 0.4 }, 1.6)
@@ -577,7 +573,7 @@
     tl.call(world('red'), null, 4.3)
       .to('.iscene--meet .ihead, .iscene--meet .ikick, .imark', { opacity: 0, scale: 1.06, duration: 0.35, ease: 'power2.in' }, 4.2);
     tiles.forEach(tt => tl.to(tt.el, { x: tt.x * 1.7, y: tt.y * 1.7, opacity: 0, duration: 0.45, ease: 'power2.in' }, 4.2));
-    tl.set(sFlip, { autoAlpha: 1 }, 4.45).call(label(2), null, 4.45)
+    tl.set(sFlip, { autoAlpha: 1 }, 4.45)
       .fromTo('.ikick--flip', { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.4 }, 4.5)
       .fromTo('.istack span', { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.65, stagger: 0.32, ease: 'expo.out' }, 4.6)
       .to('.irule', { scaleX: 1, duration: 1, ease: 'power2.inOut' }, 4.8)
@@ -585,7 +581,7 @@
     // 3 · the work: a tilted panel lands flat, a highlight walks the rows
     tl.call(world('paper'), null, 6.75)
       .to(sFlip, { autoAlpha: 0, y: -30, duration: 0.35, ease: 'power2.in' }, 6.6)
-      .set(sWork, { autoAlpha: 1 }, 6.8).call(label(3), null, 6.8)
+      .set(sWork, { autoAlpha: 1 }, 6.8)
       .fromTo('.iscene__head > *', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'expo.out' }, 6.85)
       .fromTo('.ipanel', { opacity: 0, rotationX: 42, y: 160, scale: 0.9 }, { opacity: 1, rotationX: 0, y: 0, scale: 1, duration: 1.15, ease: 'expo.out' }, 7.0)
       .fromTo('.ipanel__rows li', { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.08, ease: 'expo.out' }, 7.35);
@@ -596,7 +592,7 @@
       .to('.ipanel', { opacity: 0, y: -40, rotationX: -12, duration: 0.4, ease: 'power2.in' }, 9.6)
       .to('.iscene__head', { opacity: 0, duration: 0.3 }, 9.6)
       .set(sWork, { autoAlpha: 0 }, 10.0)
-      .set(sWorlds, { autoAlpha: 1 }, 9.8).call(label(4), null, 9.8)
+      .set(sWorlds, { autoAlpha: 1 }, 9.8)
       .fromTo('.iscene--worlds .ikick, .iscene--worlds .ihead', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'expo.out' }, 9.85)
       .fromTo('.irings', { opacity: 0, scale: 0.8 }, { opacity: 0.7, scale: 1, duration: 1.6, ease: 'expo.out' }, 9.8)
       .fromTo('.icard', { opacity: 0, rotationY: -70, z: -400, y: 80, scale: 1 }, { opacity: 1, rotationY: 0, z: 0, y: 0, scale: 1, duration: 0.9, stagger: 0.12, ease: 'expo.out' }, 10.0)
@@ -606,7 +602,7 @@
       .call(world('paper', true), null, 12.55)
       .set(sWorlds, { autoAlpha: 0 }, 12.6);
     // 5 · the question, set like an end card
-    tl.set(sAsk, { autoAlpha: 1 }, 12.6).call(label(5), null, 12.6)
+    tl.set(sAsk, { autoAlpha: 1 }, 12.6)
       .fromTo('.iask__mark', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(2)' }, 12.65)
       .to('.iask__c1', { opacity: 1, duration: 0.2 }, 12.8).to('.iask__c1', { opacity: 0, duration: 0.2 }, 13.45)
       .to('.iask__c2', { opacity: 1, duration: 0.2 }, 13.55).to('.iask__c2', { opacity: 0, duration: 0.2 }, 14.25)
