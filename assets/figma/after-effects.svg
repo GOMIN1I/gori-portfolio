@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="logo-anim">
+<mask id="mask0_0_9" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="-27" y="-27" width="150" height="150">
+<circle id="reveal-mask" cx="48" cy="48" r="75" fill="url(#paint0_radial_0_9)"/>
+</mask>
+<g mask="url(#mask0_0_9)">
+</g>
+<g id="After Effects &#226;&#128;&#148; Adobe official" clip-path="url(#clip0_0_9)">
+<path id="Vector" d="M74.6149 6.5H21.3852C13.1643 6.5 6.5 13.1643 6.5 21.3852V74.6149C6.5 82.8357 13.1643 89.5 21.3852 89.5H74.6149C82.8357 89.5 89.5 82.8357 89.5 74.6149V21.3852C89.5 13.1643 82.8357 6.5 74.6149 6.5Z" fill="#00005B"/>
+<path id="Vector_2" d="M27.713 28.5318H39.9336L53.6389 66.7922H42.4461L40.5616 60.9674H26.2283L24.3437 66.7922H13.608L27.713 28.5318ZM37.5922 51.8878L33.4236 39.039L29.2548 51.8878H37.5922Z" fill="#9999FF"/>
+<path id="Vector_3" d="M82.3922 51.0311C82.3922 52.4018 82.278 53.8865 82.1067 55.0285H63.4333C64.5753 57.8839 67.3165 59.2542 71.5995 59.2542C74.6829 59.2542 77.367 58.6833 80.0508 57.427L80.1653 65.3646C77.2528 66.8493 74.1122 67.3633 70.0574 67.3633C60.064 67.3633 53.3829 61.824 53.3829 51.7735C53.3829 42.5795 59.7787 36.4693 68.2301 36.4693C76.9103 36.4693 82.3922 42.0657 82.3922 51.0311ZM63.0908 48.5185H73.084C72.8557 45.8345 71.1997 43.9502 68.2872 43.9502C65.4891 43.9502 63.7188 45.4349 63.0908 48.5185Z" fill="#9999FF"/>
+</g>
+</g>
+<defs>
+<radialGradient id="paint0_radial_0_9" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(48 48) scale(75)">
+<stop/>
+<stop offset="0.65"/>
+<stop offset="1" stop-opacity="0"/>
+</radialGradient>
+<clipPath id="clip0_0_9">
+<rect width="83" height="83" fill="white" transform="translate(6.5 6.5)"/>
+</clipPath>
+</defs>
+</svg>
