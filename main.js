@@ -24,6 +24,8 @@
   const t = (k) => (I.ui[lang] && I.ui[lang][k]) || I.ui.en[k] || k;
 
   function swapMedia() {
+    $$('source[data-srcset-en]').forEach(el => el.setAttribute('srcset', el.dataset['srcset' + (lang === 'ru' ? 'Ru' : 'En')]));
+    $$('a[data-href-en]').forEach(a => a.setAttribute('href', a.dataset['href' + (lang === 'ru' ? 'Ru' : 'En')]));
     $$('img[data-src-en]').forEach(img => {
       const next = img.dataset['src' + (lang === 'ru' ? 'Ru' : 'En')];
       if (next && img.getAttribute('src') !== next) img.setAttribute('src', next);
@@ -314,6 +316,7 @@
   })();
 
   /* ---------------- SLOI: the real site, loaded on demand ---------------- */
+  const sloiSrc = () => lang === 'ru' ? 'sloi-site/index.html' : 'sloi-site/index.en.html';
   (() => {
     const box = $('#sloi-live'); if (!box) return;
     const run = $('#sloi-run'), close = $('#sloi-close');
@@ -321,10 +324,13 @@
     const fit = () => box.style.setProperty('--s', (window.innerWidth <= 700 ? 1 : box.clientWidth / 1280).toFixed(4));
     run.addEventListener('click', () => {
       frame = document.createElement('iframe');
-      frame.src = 'sloi-site/index.html';
+      frame.src = sloiSrc();
       frame.title = lang === 'ru' ? 'Живой сайт SLOI' : 'SLOI live site';
       box.appendChild(frame); box.classList.add('is-live'); close.hidden = false;
       fit(); ro = new ResizeObserver(fit); ro.observe(box); close.focus();
+    });
+    document.addEventListener('gori:lang', () => {
+      if (frame) { frame.src = sloiSrc(); frame.title = lang === 'ru' ? 'Живой сайт SLOI' : 'SLOI live site'; }
     });
     close.addEventListener('click', () => {
       if (frame) frame.remove(); frame = null; if (ro) ro.disconnect();
@@ -384,12 +390,14 @@
     if (introDone) return;
     introDone = true;
     store.sset('gori-intro-seen', '1');
+    if (asking) { asking.stop(); asking = null; }
     const finish = () => {
       if (introTl) introTl.kill();
+      intro.classList.remove('is-asking');
       intro.classList.remove('is-playing'); intro.setAttribute('aria-hidden', 'true');
       html.classList.remove('is-intro'); document.body.style.overflow = '';
       stage().lock(false); stage().world('paper', true);
-      heroIn(); startVerbs();
+      if (!reduce) heroIn(); startVerbs();
       if (window.ScrollTrigger) ScrollTrigger.refresh();
       const target = $('.hero__actions a'); if (target && kind !== 'auto') target.focus({ preventScroll: true });
     };
@@ -399,15 +407,130 @@
       gsap.to(intro, { opacity: 0, duration: 0.55, ease: 'power2.out', onComplete: finish });
     }
   }
-  function playIntro() {
-    if (!window.gsap || reduce) { startVerbs(); return; }
+  /* scene 0 · "what's your love language?" asked in both languages; the film waits for the answer */
+  let asking = null;
+  function splitWords(line) {
+    const walk = node => Array.from(node.childNodes).forEach(n => {
+      if (n.nodeType === 1) { walk(n); return; }
+      const frag = document.createDocumentFragment();
+      n.textContent.split(/(\s+)/).forEach(part => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.append(' '); return; }
+        const w = document.createElement('span'); w.className = 'ilang__w';
+        Array.from(part).forEach(ch => { const c = document.createElement('span'); c.className = 'ilang__c'; c.textContent = ch; w.append(c); });
+        frag.append(w);
+      });
+      n.replaceWith(frag);
+    });
+    if (!line.dataset.split) { walk(line); line.dataset.split = '1'; }
+    return $$('.ilang__c', line);
+  }
+  function askLanguage(onPick) {
+    const scene = $('.iscene--lang', intro);
+    const lines = $$('.ilang__line', scene);
+    const opts = $$('[data-pick-lang]', scene);
+    const guess = lang === 'ru' || /^(ru|be|uk|kk)\b/i.test(navigator.language || '') ? 'ru' : 'en';
+    opts.forEach(b => { b.classList.toggle('is-guess', b.dataset.pickLang === guess); b.classList.remove('is-picked'); });
+    intro.classList.add('is-asking');
+    $$('.ichrome__scene', intro).forEach(s => { s.style.opacity = s.dataset.scene === '0' ? 1 : 0; });
+    gsap.set(scene, { autoAlpha: 1, y: 0, filter: 'none' });
+    scene.classList.add('is-live');
+    const chars = lines.map(splitWords);
+    const tls = [];
+    if (reduce) {
+      gsap.set(lines, { opacity: 0 }); gsap.set(lines[guess === 'ru' ? 1 : 0], { opacity: 1 });
+      gsap.set('.ilang__beat, .ilang__hint, .ilang__opt', { opacity: 1, y: 0 });
+    } else {
+      gsap.set(lines, { opacity: 1 });
+      gsap.set(chars.flat(), { yPercent: 110, opacity: 0, rotationX: -70 });
+      // the colon beats like a heart: lub-dub, rest
+      tls.push(gsap.timeline({ repeat: -1, repeatDelay: 0.55 })
+        .to('.ilang__beat i', { scale: 1.3, duration: 0.14, ease: 'power2.out', stagger: 0.06 })
+        .to('.ilang__beat i', { scale: 1, duration: 0.22, ease: 'power2.in', stagger: 0.06 })
+        .to('.ilang__beat i', { scale: 1.18, duration: 0.12, ease: 'power2.out', stagger: 0.06 })
+        .to('.ilang__beat i', { scale: 1, duration: 0.3, ease: 'power2.inOut', stagger: 0.06 }));
+      // the question rolls between the two languages, letter by letter
+      const order = guess === 'ru' ? [1, 0] : [0, 1];
+      const roll = gsap.timeline({ repeat: -1 });
+      order.forEach(i => {
+        roll.to(chars[i], { yPercent: 0, opacity: 1, rotationX: 0, duration: 0.7, stagger: 0.022, ease: 'expo.out' })
+          .to(chars[i], { yPercent: -110, opacity: 0, rotationX: 70, duration: 0.45, stagger: 0.012, ease: 'power2.in' }, '+=2.1')
+          .set(chars[i], { yPercent: 110, rotationX: -70 });
+      });
+      tls.push(roll);
+      tls.push(gsap.timeline()
+        .fromTo('.ilang__beat', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'back.out(2.4)' }, 0)
+        .fromTo('.ilang__hint', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.6 }, 0.6)
+        .fromTo('.ilang__opt', { opacity: 0, y: 70, rotationX: 40, filter: 'blur(6px)' }, { opacity: 1, y: 0, rotationX: 0, filter: 'blur(0px)', duration: 1, stagger: 0.12, ease: 'expo.out', clearProps: 'filter' }, 0.75));
+    }
+    // plaques lean toward the cursor
+    const tilt = e => {
+      const b = e.currentTarget, r = b.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+      gsap.to(b, { rotationY: x * 14, rotationX: -y * 14, x: x * 8, y: y * 6, duration: 0.5, ease: 'power3.out' });
+    };
+    const untilt = e => gsap.to(e.currentTarget, { rotationY: 0, rotationX: 0, x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' });
+    const keys = e => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      e.preventDefault();
+      const i = opts.indexOf(document.activeElement);
+      opts[(i + 1) % opts.length].focus();
+    };
+    let picked = false;
+    const pick = e => {
+      if (picked) return;
+      picked = true;
+      const btn = e.currentTarget, next = btn.dataset.pickLang;
+      btn.classList.add('is-picked');
+      applyLang(next);
+      stop();
+      if (reduce) { gsap.set(scene, { autoAlpha: 0 }); onPick(); return; }
+      const other = opts.filter(o => o !== btn);
+      gsap.timeline({ onComplete: () => { gsap.set(scene, { autoAlpha: 0 }); onPick(); } })
+        .to(btn, { scale: 1.06, duration: 0.18, ease: 'power2.out' }, 0)
+        .to(btn, { scale: 1, duration: 0.3, ease: 'back.out(3)' }, 0.18)
+        .to(other, { opacity: 0, y: 30, scale: 0.94, duration: 0.4, ease: 'power2.in' }, 0)
+        .to('.ilang__beat i', { scale: 1.6, duration: 0.25, ease: 'power2.out' }, 0.1)
+        .to(scene.querySelectorAll('.ilang__q, .ilang__hint'), { opacity: 0, y: -40, filter: 'blur(8px)', duration: 0.5, ease: 'power2.in' }, 0.25)
+        .to(btn, { opacity: 0, y: -24, scale: 0.9, filter: 'blur(6px)', duration: 0.45, ease: 'power2.in' }, 0.6)
+        .to('.ilang__beat', { opacity: 0, scale: 0.2, duration: 0.4, ease: 'power2.in' }, 0.6)
+        .set(scene.querySelectorAll('.ilang__q, .ilang__hint, .ilang__opt, .ilang__beat, .ilang__beat i'), { clearProps: 'all' }, 1.1);
+    };
+    const on = [['pointermove', tilt], ['pointerleave', untilt], ['keydown', keys], ['click', pick]];
+    opts.forEach(b => on.forEach(([ev, fn]) => { if (finePointer || !ev.startsWith('pointer')) b.addEventListener(ev, fn); }));
+    function stop() {
+      tls.forEach(t => t.kill());
+      opts.forEach(b => on.forEach(([ev, fn]) => b.removeEventListener(ev, fn)));
+      intro.classList.remove('is-asking');
+      scene.classList.remove('is-live');
+      $$('.ichrome__scene', intro).forEach(s => { s.style.opacity = ''; });
+    }
+    const first = opts.find(b => b.dataset.pickLang === guess);
+    setTimeout(() => { if (!picked) first.focus({ preventScroll: true }); }, reduce ? 0 : 900);
+    return { stop() { stop(); gsap.set(scene, { autoAlpha: 0 }); } };
+  }
+
+  function playIntro({ askLang = true } = {}) {
+    if (!window.gsap) { startVerbs(); return; }
+    if (reduce && !askLang) { startVerbs(); return; }
     introDone = false;
     window.scrollTo(0, 0);
     html.classList.add('is-intro'); stage().lock(true); stage().world('paper', true);
     intro.style.opacity = 1; intro.classList.add('is-playing'); intro.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    const vw = window.innerWidth / 100, vh = window.innerHeight / 100;
     const scenes = $$('.iscene', intro);
+    gsap.set(scenes, { autoAlpha: 0, y: 0 });
+    gsap.set('.ichrome__scene', { opacity: 0 });
+    if (!askLang) { playFilm(); return; }
+    asking = askLanguage(() => {
+      asking = null;
+      if (introDone) return;
+      if (reduce) endIntro('skip'); else playFilm();
+    });
+  }
+  function playFilm() {
+    const vw = window.innerWidth / 100, vh = window.innerHeight / 100;
+    const scenes = $$('.iscene:not(.iscene--lang)', intro);
     const [sMeet, sFlip, sWork, sWorlds, sAsk] = scenes;
     const outline = $$('.imark__outline path', intro), ghost = $$('.ighost path', intro);
     [...outline, ...ghost].forEach(p => p.setAttribute('pathLength', '1'));
@@ -495,7 +618,7 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (!introDone) endIntro('skip'); else if (!lb.hidden) closeLb(); }
   });
-  $('#replay').addEventListener('click', () => { window.scrollTo(0, 0); playIntro(); });
+  $('#replay').addEventListener('click', () => { window.scrollTo(0, 0); playIntro({ askLang: false }); });
 
   /* ---------------- boot ---------------- */
   const params = new URLSearchParams(location.search);
@@ -503,5 +626,6 @@
   const initial = params.get('lang') || store.get('gori-lang') || 'en';
   applyLang(initial, { save: initial !== 'en' || params.has('lang') });
   const forceIntro = params.has('intro');
-  if (!store.sget('gori-intro-seen') || forceIntro) playIntro(); else startVerbs();
+  // a link with ?lang= already answers the language question
+  if (!store.sget('gori-intro-seen') || forceIntro) playIntro({ askLang: !params.has('lang') }); else startVerbs();
 })();

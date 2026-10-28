@@ -39,7 +39,21 @@
     <svg class="ichrome__mark" viewBox="0 0 1760 760" aria-hidden="true"><use href="#gori-mark"/><use href="#gori-colon" class="red"/></svg>
     <p class="ichrome__tr"><span>GORI:</span><span data-i18n="intro.tr">Portfolio, 2026</span></p>
     <p class="ichrome__bl">gori: portfolio</p>
-    <p class="ichrome__br"><span class="ichrome__scene" data-scene="1" data-i18n="intro.s1">meet GORI:</span><span class="ichrome__scene" data-scene="2" data-i18n="intro.s2">what I do</span><span class="ichrome__scene" data-scene="3" data-i18n="intro.s3">the work</span><span class="ichrome__scene" data-scene="4" data-i18n="intro.s4">the worlds</span><span class="ichrome__scene" data-scene="5" data-i18n="intro.s5">one question</span></p>
+    <p class="ichrome__br"><span class="ichrome__scene" data-scene="0">language / язык</span><span class="ichrome__scene" data-scene="1" data-i18n="intro.s1">meet GORI:</span><span class="ichrome__scene" data-scene="2" data-i18n="intro.s2">what I do</span><span class="ichrome__scene" data-scene="3" data-i18n="intro.s3">the work</span><span class="ichrome__scene" data-scene="4" data-i18n="intro.s4">the worlds</span><span class="ichrome__scene" data-scene="5" data-i18n="intro.s5">one question</span></p>
+  </div>
+
+  <!-- 0: the language question, asked in both languages before the film starts -->
+  <div class="iscene iscene--lang" role="group" aria-labelledby="ilang-q">
+    <div class="ilang__beat" aria-hidden="true"><i></i><i></i></div>
+    <h2 class="ilang__q" id="ilang-q">
+      <span class="ilang__line" lang="en">What’s your <span class="tone">love language?</span></span>
+      <span class="ilang__line" lang="ru">Какой твой <span class="tone">язык любви?</span></span>
+    </h2>
+    <p class="ikick ilang__hint"><span lang="en">pick one, I speak both</span><span aria-hidden="true">·</span><span lang="ru">выбери, я говорю на обоих</span></p>
+    <div class="ilang__opts">
+      <button class="ilang__opt" type="button" data-pick-lang="en" lang="en"><span class="ilang__code" aria-hidden="true">EN</span><span class="ilang__name">English</span><span class="ilang__sub">the whole site in English</span><i aria-hidden="true"></i></button>
+      <button class="ilang__opt" type="button" data-pick-lang="ru" lang="ru"><span class="ilang__code" aria-hidden="true">RU</span><span class="ilang__name">Русский</span><span class="ilang__sub">весь сайт на русском</span><i aria-hidden="true"></i></button>
+    </div>
   </div>
 
   <!-- A + B: mark draws, then the headline -->
@@ -127,7 +141,7 @@
 <!-- ============ NAV ============ -->
 <header class="nav" id="nav">
   <div class="nav__inner">
-    <a class="nav__mark" href="#top" aria-label="GORI: back to top">
+    <a class="nav__mark" href="#top" aria-label="GORI: back to top" data-i18n-attr="aria-label:nav.top">
       <svg viewBox="0 0 1760 760" aria-hidden="true"><use href="#gori-mark"/><use href="#gori-colon" class="red"/></svg>
     </a>
     <nav class="nav__links" aria-label="Sections" data-i18n-attr="aria-label:nav.label">
@@ -232,7 +246,7 @@
 <section class="case case--sr" id="saidright" aria-labelledby="sr-title" data-world="sr" data-label="Saidright">
   <div class="wrap">
     <header class="sr-head">
-      <img class="sr-head__icon float" src="assets/saidright/icon.png" alt="Saidright app icon" width="512" height="512" loading="lazy">
+      <img class="sr-head__icon float" src="assets/saidright/icon.png" alt="Saidright app icon" data-i18n-attr="alt:sr.icon.alt" width="512" height="512" loading="lazy">
       <div class="sr-head__text">
         <h2 class="h2" id="sr-title" data-i18n="sr.title">Saidright: <span class="tone">dictation that teaches you the language</span></h2>
         <p class="case__lede scrub" data-i18n="sr.lede">A free, open-source Mac app. Press the right ⌘, speak, and your words land where you were typing. If you’re learning English, it suggests one fix that matters.</p>
@@ -250,7 +264,7 @@
     <div class="campaign" id="campaign">
       <div class="campaign__head">
         <h3 class="h3" data-i18n="sr.camp.title">The campaign: “Voice takes shape”</h3>
-        <p data-i18n="sr.camp.lede">One idea from the app’s own icon: voice bars become a coral cursor, the cursor becomes formatted text. I wrote the brief, directed it and signed off every cut. 3D in Blender, the edit in Remotion, the score timed to the picture.</p>
+        <p data-i18n="sr.camp.lede">One idea from the app’s own icon: voice bars become a coral cursor, the cursor becomes formatted text. I wrote the brief, directed it and signed off every cut. 3D in Blender, the edit in After Effects and Remotion, the score timed to the picture.</p>
       </div>
 
       <div class="film">
@@ -435,7 +449,7 @@
           <div><span data-i18n="rf.m.res">Reserved</span><b data-f="reserved">0</b></div>
           <div class="ledger__avail"><span data-i18n="rf.m.av">Available</span><b data-f="available">700</b></div>
         </div>
-        <p class="ledger__formula"><code>available = captured − refunded − confirmed − reserved</code></p>
+        <p class="ledger__formula"><code data-i18n="rf.m.formula">available = captured − refunded − confirmed − reserved</code></p>
         <div class="ledger__btns">
           <button type="button" class="chip" data-act="reserve" data-i18n="rf.b1">Reserve 200</button>
           <button type="button" class="chip" data-act="confirm" data-i18n="rf.b2">Confirm the payout</button>
@@ -446,18 +460,18 @@
         <ol class="ledger__log" id="ledger-log" aria-live="polite"></ol>
       </div>
       <div class="ledger__side">
-        <pre class="code"><code><span class="c">-- Q2: one row per order, in minor units.</span>
+        <pre class="code"><code><span class="c" data-i18n="rf.q2">-- Q2: one row per order, in minor units.</span>
 <span class="k">SELECT</span> order_id, captured, historical_refunded,
        confirmed_new, reserved, available
 <span class="k">FROM</span> balances <span class="k">ORDER BY</span> order_id;
 
-<span class="c">-- Q7: the money rule. Expect zero rows.</span>
+<span class="c" data-i18n="rf.q7">-- Q7: the money rule. Expect zero rows.</span>
 <span class="k">SELECT</span> * <span class="k">FROM</span> balances
 <span class="k">WHERE</span> history_complete <span class="k">AND</span> available &lt; 0;</code></pre>
         <div class="lanes" aria-label="Target process, simplified" data-i18n-attr="aria-label:rf.lanes.label" role="img">
-          <div class="lane"><span class="lane__who">Support</span><span class="lane__step" data-i18n="rf.l1">Register the request</span><span class="lane__step" data-i18n="rf.l2">Check origin and history</span></div>
-          <div class="lane"><span class="lane__who">Finance</span><span class="lane__step" data-i18n="rf.l3">Approve amount and route</span><span class="lane__step lane__step--key" data-i18n="rf.l4">Reserve atomically</span><span class="lane__step" data-i18n="rf.l5">Confirm the result</span></div>
-          <div class="lane"><span class="lane__who">Accounting</span><span class="lane__step" data-i18n="rf.l6">Reconcile with the books</span><span class="lane__step" data-i18n="rf.l7">Notify and close</span></div>
+          <div class="lane"><span class="lane__who" data-i18n="rf.who1">Support</span><span class="lane__step" data-i18n="rf.l1">Register the request</span><span class="lane__step" data-i18n="rf.l2">Check origin and history</span></div>
+          <div class="lane"><span class="lane__who" data-i18n="rf.who2">Finance</span><span class="lane__step" data-i18n="rf.l3">Approve amount and route</span><span class="lane__step lane__step--key" data-i18n="rf.l4">Reserve atomically</span><span class="lane__step" data-i18n="rf.l5">Confirm the result</span></div>
+          <div class="lane"><span class="lane__who" data-i18n="rf.who3">Accounting</span><span class="lane__step" data-i18n="rf.l6">Reconcile with the books</span><span class="lane__step" data-i18n="rf.l7">Notify and close</span></div>
         </div>
         <button class="btn btn--ghost btn--sm" type="button" data-lightbox="assets/sql/bpmn-to-be.png" data-i18n="rf.bpmn">Open the full BPMN diagram (in Russian)</button>
       </div>
@@ -489,10 +503,10 @@
     <div class="marks">
       <div class="marks__stage" id="marks-stage">
         <span class="rings" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <img class="on" src="assets/gomini/gomini-main.png" alt="GOMINI logo with the line: where creativity connects the world" width="1080" height="1080" loading="lazy" data-mark="main">
-        <img src="assets/gomini/gomini-media.png" alt="GOMINI MEDIA logo" width="1080" height="1080" loading="lazy" data-mark="media">
-        <img src="assets/gomini/gomini-sound.png" alt="GOMINI SOUND logo" width="1080" height="1080" loading="lazy" data-mark="sound">
-        <svg class="marks__gori" data-mark="gori" viewBox="0 0 1760 760" role="img" aria-label="GORI: hand-drawn wordmark"><use href="#gori-mark"/><use href="#gori-colon"/></svg>
+        <img class="on" src="assets/gomini/gomini-main.png" alt="GOMINI logo with the line: where creativity connects the world" data-i18n-attr="alt:gm.a.main" width="1080" height="1080" loading="lazy" data-mark="main">
+        <img src="assets/gomini/gomini-media.png" alt="GOMINI MEDIA logo" data-i18n-attr="alt:gm.a.media" width="1080" height="1080" loading="lazy" data-mark="media">
+        <img src="assets/gomini/gomini-sound.png" alt="GOMINI SOUND logo" data-i18n-attr="alt:gm.a.sound" width="1080" height="1080" loading="lazy" data-mark="sound">
+        <svg class="marks__gori" data-mark="gori" viewBox="0 0 1760 760" role="img" aria-label="GORI: hand-drawn wordmark" data-i18n-attr="aria-label:gm.a.gori"><use href="#gori-mark"/><use href="#gori-colon"/></svg>
       </div>
       <div class="marks__side">
         <div class="seg" role="tablist" aria-label="Marks" data-i18n-attr="aria-label:gm.tabs">
@@ -563,16 +577,16 @@
     <div class="sloi__media">
       <div class="sloi-live" id="sloi-live" data-lenis-prevent>
         <picture>
-          <source media="(max-width: 700px)" srcset="assets/sloi/live-mobile.jpg" width="374" height="828">
-          <img class="sloi-live__poster" src="assets/sloi/live-desktop.jpg" alt="SLOI concept site, first screen: “Changing the world suits you”" width="1416" height="936" loading="lazy" data-i18n-attr="alt:sl.a1">
+          <source media="(max-width: 700px)" srcset="assets/sloi/live-mobile-en.jpg" data-srcset-en="assets/sloi/live-mobile-en.jpg" data-srcset-ru="assets/sloi/live-mobile.jpg" width="374" height="828">
+          <img class="sloi-live__poster" src="assets/sloi/live-desktop-en.jpg" data-src-en="assets/sloi/live-desktop-en.jpg" data-src-ru="assets/sloi/live-desktop.jpg" alt="SLOI concept site, first screen: “Changing the world suits you”" width="1416" height="936" loading="lazy" data-i18n-attr="alt:sl.a1">
         </picture>
         <div class="sloi-live__bar">
           <button class="pill pill--go" type="button" id="sloi-run"><span data-i18n="sl.run">Try the live site here</span><i aria-hidden="true"></i></button>
-          <a class="pill pill--ghost" href="https://sloi-wear-change.stillvine1024.chatgpt.site" target="_blank" rel="noopener" data-i18n="sl.open">Open in a new tab</a>
+          <a class="pill pill--ghost" href="sloi-site/index.en.html" data-href-en="sloi-site/index.en.html" data-href-ru="https://sloi-wear-change.stillvine1024.chatgpt.site" target="_blank" rel="noopener" data-i18n="sl.open">Open in a new tab</a>
         </div>
         <button class="sloi-live__close" type="button" id="sloi-close" hidden data-i18n="sl.close">Close the site</button>
       </div>
-      <figure class="sloi__phone"><img src="assets/sloi/live-mobile.jpg" alt="SLOI on a phone: the first screen" width="374" height="828" loading="lazy" data-i18n-attr="alt:sl.a3"></figure>
+      <figure class="sloi__phone"><img src="assets/sloi/live-mobile-en.jpg" data-src-en="assets/sloi/live-mobile-en.jpg" data-src-ru="assets/sloi/live-mobile.jpg" alt="SLOI on a phone: the first screen" width="374" height="828" loading="lazy" data-i18n-attr="alt:sl.a3"></figure>
       <figure class="sloi__diploma glint"><img src="assets/sloi/diploma.jpg" alt="Winner’s diploma, Samara University hackathon, 2024" width="620" height="892" loading="lazy" data-i18n-attr="alt:sl.a2"></figure>
     </div>
   </div>
