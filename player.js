@@ -194,7 +194,8 @@
     root.addEventListener('mouseenter', () => wide(true));
     root.addEventListener('mouseleave', () => { foldT = setTimeout(() => wide(false), 700); });
   }
-  root.addEventListener('focusin', () => wide(true));
+  // keyboard focus opens it; a mouse click's leftover focus does not keep it open
+  root.addEventListener('focusin', e => { if (e.target.matches(':focus-visible')) wide(true); });
   root.addEventListener('focusout', e => { if (!root.contains(e.relatedTarget) && !root.matches(':hover')) foldT = setTimeout(() => wide(false), 300); });
   opener.addEventListener('click', () => {
     if (!root.classList.contains('is-wide')) { wide(true); return; }

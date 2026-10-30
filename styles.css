@@ -1129,8 +1129,18 @@ html.is-intro main, html.is-intro .nav, html.is-intro .foot { visibility: hidden
 .player__pill { transition: max-width 520ms var(--ease), box-shadow 300ms ease; }
 .player:not(.is-wide) .player__pill { max-width: 52px; }
 .player:not(.is-wide) .player__pill::after { opacity: 0; }
-.player:not(.is-wide) .player__pill > :not(.player__open), .player:not(.is-wide) .player__open > :not(.player__art) { opacity: 0; pointer-events: none; }
+.player:not(.is-wide) .player__pill > :not(.player__open):not(.player__badge), .player:not(.is-wide) .player__open > :not(.player__art) { opacity: 0; pointer-events: none; }
 .player__pill > *, .player__open > * { transition: opacity 260ms ease; }
 .player.is-wide .player__pill > *, .player.is-wide .player__open > * { transition-delay: 120ms; }
-.player:not(.is-wide) .player__art { box-shadow: 0 0 0 2px var(--color-red); }
-.player:not(.is-wide):not(.is-playing) .player__art { box-shadow: 0 0 0 2px var(--pl-line); }
+.player__pill { transition: max-width 520ms var(--ease), border-radius 420ms var(--ease), padding 420ms var(--ease); }
+.player__pill .player__art { min-width: 40px; transition: width 420ms var(--ease), height 420ms var(--ease), min-width 420ms var(--ease), border-radius 420ms var(--ease); }
+.player:not(.is-wide) .player__pill { max-width: 56px; padding: 4px; border-radius: 16px; }
+.player:not(.is-wide) .player__open { flex: none; padding-right: 0; }
+.player:not(.is-wide) .player__pill .player__art { width: 48px; height: 48px; min-width: 48px; border-radius: 12px; animation: none; }
+/* a small live badge on the folded cover */
+.player__badge { position: absolute; right: 7px; top: 7px; display: none; align-items: flex-end; gap: 1.5px; height: 12px; padding: 3px 4px; border-radius: 6px; background: var(--pl-bg); pointer-events: none; box-sizing: content-box; }
+.player__badge i { width: 2px; height: 40%; border-radius: 1px; background: var(--color-red); }
+.player.is-playing:not(.is-wide) .player__badge { display: inline-flex; }
+.player.is-playing .player__badge i { animation: pl-eq 900ms ease-in-out infinite alternate; }
+.player__badge i:nth-child(2) { animation-delay: -300ms !important; }
+.player__badge i:nth-child(3) { animation-delay: -600ms !important; }
