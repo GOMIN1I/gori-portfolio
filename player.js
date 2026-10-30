@@ -253,7 +253,7 @@
     play(false, 2.4).then(ok => { if (!ok) waitForGesture(); });
   }
   // the intro has its own score: the radio waits
-  function hush() { stopWaiting(); if (!audio.paused) { cancelAnimationFrame(fadeRaf); audio.pause(); state(); } }
+  function hush() { stopWaiting(); ducked = false; if (!audio.paused) { cancelAnimationFrame(fadeRaf); audio.pause(); state(); } }
 
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawArts(); paint(); });
   window.GORI_MUSIC = { arm, hush, play: () => play(true), pause: () => pause(true), get playing() { return !audio.paused; } };

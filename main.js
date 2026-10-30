@@ -165,8 +165,9 @@
   function playFilm(at) {
     if (!film.dataset.loaded) { film.src = film.dataset['src' + (lang === 'ru' ? 'Ru' : 'En')]; film.dataset.loaded = '1'; }
     filmPlay.hidden = true; film.controls = true;
-    const go = () => { if (at != null) film.currentTime = at; film.play().catch(() => {}); };
-    if (film.readyState >= 1) go(); else film.addEventListener('loadedmetadata', go, { once: true });
+    // preload="none" fetches nothing until play(), so play first and seek once the metadata is in
+    if (at != null) { if (film.readyState >= 1) film.currentTime = at; else film.addEventListener('loadedmetadata', () => { film.currentTime = at; }, { once: true }); }
+    film.play().catch(() => {});
   }
   filmPlay.addEventListener('click', () => playFilm());
   film.addEventListener('play', () => { filmPlay.hidden = true; film.controls = true; });
@@ -544,18 +545,18 @@
     if (!window.gsap) { startVerbs(); radio().arm(); return; }
     if (reduce && !askLang) { startVerbs(); radio().arm(); return; }
     introDone = false;
-    radio().hush();
+    film.pause(); radio().hush();
     window.scrollTo(0, 0);
     html.classList.add('is-intro'); stage().lock(true); stage().world('paper', true);
     intro.style.opacity = 1; intro.classList.add('is-playing'); intro.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     const scenes = $$('.iscene', intro);
     gsap.set(scenes, { autoAlpha: 0, y: 0 });
-    if (!askLang) { playFilm(); return; }
+    if (!askLang) { playIntroFilm(); return; }
     asking = askLanguage(() => {
       asking = null;
       if (introDone) return;
-      if (reduce) endIntro('skip'); else playFilm();
+      if (reduce) endIntro('skip'); else playIntroFilm();
     });
   }
   /* the film: the mark draws, a reel of "GORI: ___", the Earth, then the question */
@@ -580,7 +581,7 @@
     });
   }
 
-  function playFilm() {
+  function playIntroFilm() {
     const vw = window.innerWidth / 100, vh = window.innerHeight / 100;
     const sMeet = $('.iscene--meet', intro), sReel = $('.iscene--reel', intro), sEarth = $('.iscene--earth', intro), sAsk = $('.iscene--ask', intro);
     const scenes = [sMeet, sReel, sEarth, sAsk];

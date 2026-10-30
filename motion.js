@@ -35,6 +35,7 @@
       current = name; html.dataset.world = name;
       ['bg', 'dot', 'tint'].forEach(k => {
         const to = pal[name][k];
+        if (hasG) G.killTweensOf(col[k]);
         if (instant || !hasG || reduce) { col[k][0] = to[0]; col[k][1] = to[1]; col[k][2] = to[2]; }
         else G.to(col[k], { 0: to[0], 1: to[1], 2: to[2], duration: 0.9, ease: 'power2.inOut', overwrite: true });
       });
@@ -176,7 +177,7 @@ void main(){
     if (!hasG || reduce) {
       // still switch worlds and labels, without motion
       const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { STAGE.world(e.target.dataset.world); } }), { rootMargin: '-50% 0px -49% 0px' });
-      $$('[data-world]').forEach(s => io.observe(s));
+      $$('body [data-world]').forEach(s => io.observe(s));
       return;
     }
 
@@ -230,6 +231,7 @@ void main(){
     }
 
     /* chapters: words stack up, then the next world wipes in from the colon */
+    const chapters = new Map();
     $$('.chapter').forEach(ch => {
       const pin = $('.chapter__pin', ch), wipe = $('.chapter__wipe', ch), kick = $('.chapter__kick', ch);
       const next = ch.nextElementSibling && ch.nextElementSibling.dataset.world;
@@ -238,9 +240,9 @@ void main(){
         wipe.style.left = (kr.left - pr.left + 2) + 'px'; wipe.style.top = (kr.top - pr.top + kr.height / 2) + 'px';
       };
       const tl = G.timeline({ scrollTrigger: {
-        trigger: ch, start: 'top top', end: '+=150%', scrub: 0.5, pin: pin, anticipatePin: 1, onRefresh: placeWipe,
-        onUpdate: s => { if (!s.isActive || html.classList.contains('is-intro')) return; STAGE.world(s.progress > 0.9 && next ? next : 'red'); }
+        trigger: ch, start: 'top top', end: '+=150%', scrub: 0.5, pin: pin, anticipatePin: 1, onRefresh: placeWipe
       } });
+      chapters.set(ch, { st: tl.scrollTrigger, next });
       tl.fromTo(kick, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.08 }, 0)
         .fromTo($$('.chapter__w > span', ch), { yPercent: 108 }, { yPercent: 0, duration: 0.16, stagger: 0.1, ease: 'power3.out' }, 0.04)
         .fromTo($('.chapter__rule', ch), { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: 'power2.inOut' }, 0.1)
@@ -250,11 +252,21 @@ void main(){
         .fromTo(wipe, { scale: 0 }, { scale: 1, duration: 0.24, ease: 'power2.in' }, 0.76);
     });
 
-    /* worlds and labels */
-    $$('[data-world]').forEach(sec => ST.create({
-      trigger: sec, start: sec.classList.contains('chapter') ? 'top 18%' : 'top 55%', end: 'bottom 55%',
-      onToggle: s => { if (s.isActive && !html.classList.contains('is-intro')) { STAGE.world(sec.dataset.world); } }
-    }));
+    /* worlds: always read from where the page is now, so the same spot has the same colours
+       in either scroll direction and after anything changes the page's height */
+    const worldSecs = $$('body [data-world]');
+    const syncWorld = () => {
+      if (html.classList.contains('is-intro')) return;
+      let name = null;
+      worldSecs.forEach(sec => {
+        const ch = chapters.get(sec);
+        if (sec.getBoundingClientRect().top > window.innerHeight * (ch ? 0.18 : 0.55)) return;
+        name = ch && ch.next && ch.st.progress > 0.9 ? ch.next : sec.dataset.world;
+      });
+      if (name) STAGE.world(name);
+    };
+    if (window.GORI_LENIS) window.GORI_LENIS.on('scroll', syncWorld); else window.addEventListener('scroll', syncWorld, { passive: true });
+    ST.addEventListener('refresh', syncWorld);
 
     /* headings rise word by word */
     $$('main .h2, .foot .h2').forEach(h => {
