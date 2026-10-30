@@ -170,7 +170,7 @@
     film.play().catch(() => {});
   }
   filmPlay.addEventListener('click', () => playFilm());
-  film.addEventListener('play', () => { filmPlay.hidden = true; film.controls = true; });
+  film.addEventListener('play', () => { filmPlay.hidden = true; film.controls = true; if (window.GORI_SOUND) window.GORI_SOUND.stop(0.3); });
   cueBtns.forEach(b => b.addEventListener('click', () => playFilm(parseFloat(b.dataset.t))));
   film.addEventListener('timeupdate', () => {
     const now = film.currentTime; let idx = -1;
@@ -424,13 +424,11 @@
       intro.classList.remove('is-playing'); intro.setAttribute('aria-hidden', 'true');
       html.classList.remove('is-intro'); document.body.style.overflow = '';
       stage().lock(false); stage().world('paper', true);
-      if (!reduce) heroIn(); startVerbs(); radio().arm();
+      if (!reduce) heroIn(); startVerbs(); radio().arm(Math.max(0, radioIn - (performance.now() - ended) / 1000), radioIn && snd ? snd.fade : undefined);
       if (window.ScrollTrigger) ScrollTrigger.refresh();
       const target = $('.hero__actions a'); if (target && kind !== 'auto') target.focus({ preventScroll: true });
     };
-    if (snd) {
-      if (kind === 'yes' || kind === 'no') { snd.fx(kind); snd.stop(2.4); } else snd.stop(0.6);
-    }
+    const radioIn = snd ? snd.handoff(kind) : 0, ended = performance.now();
     $$('.ishot__video', intro).forEach(v => v.pause());
     if (earth) earth.stop();
     if (kind === 'no') {
@@ -546,6 +544,7 @@
     if (reduce && !askLang) { startVerbs(); radio().arm(); return; }
     introDone = false;
     film.pause(); radio().hush();
+    if (snd && snd.enabled) snd.prepare();
     window.scrollTo(0, 0);
     html.classList.add('is-intro'); stage().lock(true); stage().world('paper', true);
     intro.style.opacity = 1; intro.classList.add('is-playing'); intro.setAttribute('aria-hidden', 'false');

@@ -27,7 +27,7 @@
   const audio = new Audio();
   audio.preload = 'none';
   const pre = new Audio(); pre.preload = 'none';
-  let idx = 0, level = 0.6, fadeRaf = 0, armed = false, ducked = false, waiting = null;
+  let idx = 0, level = 0.6, fadeRaf = 0, armed = false, ducked = false, waiting = null, armT = 0;
   const saved = (() => { try { return JSON.parse(store.get('gori-music-at') || 'null'); } catch (e) { return null; } })();
   if (saved && saved.i >= 0 && saved.i < TRACKS.length) idx = saved.i;
   const vol = parseFloat(store.get('gori-music-vol'));
@@ -118,8 +118,10 @@
     };
     fadeRaf = requestAnimationFrame(step);
   }
+  // the visitor took over while the intro's music was still dissolving
+  function quietIntro() { clearTimeout(armT); armT = 0; if (window.GORI_SOUND) window.GORI_SOUND.stop(0.4); }
   function play(byUser, fade = 0.35) {
-    if (byUser) { store.set('gori-music', '1'); stopWaiting(); }
+    if (byUser) { store.set('gori-music', '1'); stopWaiting(); quietIntro(); }
     if (!audio.src) load(idx);
     audio.volume = 0;
     const p = audio.play();
@@ -128,7 +130,7 @@
     ok(); return Promise.resolve(true);
   }
   function pause(byUser, fade = 0.3) {
-    if (byUser) store.set('gori-music', '0');
+    if (byUser) { store.set('gori-music', '0'); quietIntro(); }
     stopWaiting();
     if (audio.paused) { state(); return; }
     ramp(0, fade, () => { audio.pause(); state(); });
@@ -215,8 +217,11 @@
   /* ---------- videos with sound take the floor ---------- */
   document.addEventListener('play', e => {
     const v = e.target;
-    if (!(v instanceof HTMLVideoElement) || v.muted || audio.paused) return;
-    ducked = true; pause(false, 0.5);
+    if (!(v instanceof HTMLVideoElement) || v.muted) return;
+    // a film started before the radio came in: the radio waits for it
+    const late = !!armT; clearTimeout(armT); armT = 0;
+    if (audio.paused && !late) return;
+    ducked = true; if (!late) pause(false, 0.5);
     const back = () => { v.removeEventListener('pause', back); v.removeEventListener('ended', back); if (ducked) { ducked = false; play(false, 1.2); } };
     v.addEventListener('pause', back); v.addEventListener('ended', back);
   }, true);
@@ -243,17 +248,18 @@
     ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, waiting, true));
   }
   // called when the site proper is on screen
-  function arm() {
+  function arm(after = 0, fade = 2.4) {
     root.hidden = false;
     if (!arts.length) { drawArts(); paint(); }
     if (window.gsap && !reduce && !armed) window.gsap.fromTo(root, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.4, ease: 'expo.out', clearProps: 'opacity,transform' });
     armed = true;
     if (!audio.src) load(idx, saved && saved.i === idx ? saved.t : 0);
     if (!wanted() || !audio.paused) return;
-    play(false, 2.4).then(ok => { if (!ok) waitForGesture(); });
+    clearTimeout(armT);
+    armT = setTimeout(() => { armT = 0; play(false, fade).then(ok => { if (!ok) waitForGesture(); }); }, after * 1000);
   }
   // the intro has its own score: the radio waits
-  function hush() { stopWaiting(); ducked = false; if (!audio.paused) { cancelAnimationFrame(fadeRaf); audio.pause(); state(); } }
+  function hush() { stopWaiting(); clearTimeout(armT); armT = 0; ducked = false; if (!audio.paused) { cancelAnimationFrame(fadeRaf); audio.pause(); state(); } }
 
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawArts(); paint(); });
   window.GORI_MUSIC = { arm, hush, play: () => play(true), pause: () => pause(true), get playing() { return !audio.paused; } };
