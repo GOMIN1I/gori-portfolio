@@ -284,7 +284,7 @@ void main(){
     }));
 
     /* numbers count up */
-    $$('.proof__v, .formats__num').forEach(box => {
+    $$('.proof__v').forEach(box => {
       const nums = [];
       const walk = node => Array.from(node.childNodes).forEach(n => {
         if (n.nodeType === 3 && /\d/.test(n.textContent)) {

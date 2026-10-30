@@ -376,7 +376,32 @@
   lbClose.addEventListener('click', closeLb);
   lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
 
-  /* ---------------- intro: a promo film in six scenes ---------------- */
+  /* ---------------- where: planet Earth, local clocks, arcs from any city ---------------- */
+  const earthSec = $('#earth');
+  if (earthSec && window.GORI_EARTH) {
+    const globe = window.GORI_EARTH.create($('.earth__canvas', earthSec), { land: '--color-cream', arc: '--color-red', pin: '--color-red', yaw: -10, pitch: 24, spin: 6, drag: true });
+    let timer = 0, resume = null;
+    new IntersectionObserver(es => es.forEach(e => {
+      clearInterval(timer);
+      if (e.isIntersecting) { globe.size(); globe.start(); globe.burst(8, 2); if (!reduce) timer = setInterval(() => globe.burst(3, 1.2), 2600); } else globe.stop();
+    }), { rootMargin: '80px 0px' }).observe($('.earth__canvas', earthSec));
+    const clocks = $$('.earth__clocks button', earthSec);
+    const tickClocks = () => clocks.forEach(b => {
+      try { $('time', b).textContent = new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: b.dataset.tz }).format(new Date()); } catch (e) { /* unknown zone */ }
+    });
+    tickClocks(); setInterval(tickClocks, 20000);
+    document.addEventListener('gori:lang', tickClocks);
+    clocks.forEach(b => b.addEventListener('click', () => {
+      const city = b.dataset.city, others = globe.keys.filter(k => k !== city);
+      clocks.forEach(o => o.classList.toggle('is-on', o === b));
+      globe.state.spin = 0; globe.face(city, 1.1);
+      for (let i = 0; i < 5; i++) globe.arc(city, others[(Math.random() * others.length) | 0], 0.8 + i * 0.16);
+      if (resume) resume.kill();
+      resume = gsap.delayedCall(5, () => { globe.state.spin = 6; });
+    }));
+  }
+
+  /* ---------------- intro: a promo film with its own score ---------------- */
   const intro = $('#intro');
   const html = document.documentElement;
   const stage = () => window.GORI_STAGE || { world() {}, lock() {} };
@@ -401,6 +426,11 @@
       if (window.ScrollTrigger) ScrollTrigger.refresh();
       const target = $('.hero__actions a'); if (target && kind !== 'auto') target.focus({ preventScroll: true });
     };
+    if (snd) {
+      if (kind === 'yes' || kind === 'no') { snd.fx(kind); snd.stop(2.4); } else snd.stop(0.6);
+    }
+    $$('.ishot__video', intro).forEach(v => v.pause());
+    if (earth) earth.stop();
     if (kind === 'no') {
       gsap.timeline().to('.iask__btns', { opacity: 0, duration: 0.25 }).to('.iask__notyet', { opacity: 1, duration: 0.3 }).to(intro, { opacity: 0, duration: 0.6, delay: 1.2, onComplete: finish });
     } else {
@@ -481,6 +511,7 @@
       picked = true;
       const btn = e.currentTarget, next = btn.dataset.pickLang;
       btn.classList.add('is-picked');
+      if (snd && snd.enabled) snd.unlock().then(ok => { if (ok) snd.fx('pick'); });
       applyLang(next);
       stop();
       if (reduce) { gsap.set(scene, { autoAlpha: 0 }); onPick(); return; }
@@ -525,25 +556,43 @@
       if (reduce) endIntro('skip'); else playFilm();
     });
   }
+  /* the film: the mark draws, a reel of "GORI: ___", the Earth, then the question */
+  const snd = window.GORI_SOUND;
+  const sndBtn = $('.intro__sound', intro);
+  let cues = null, earth = null;
+  const tok = n => getComputedStyle(html).getPropertyValue(n).trim();
+  function chars(el) {
+    if (!el.querySelector('.ich')) {
+      const text = el.textContent; el.textContent = '';
+      Array.from(text).forEach(ch => { const s = document.createElement('span'); s.className = 'ich'; s.textContent = ch; el.append(s); });
+    }
+    return $$('.ich', el);
+  }
+  function soundState(on) { if (sndBtn) sndBtn.setAttribute('aria-pressed', String(!!on)); }
+  if (sndBtn) {
+    if (!snd || !snd.supported) sndBtn.hidden = true;
+    else sndBtn.addEventListener('click', () => {
+      if (sndBtn.getAttribute('aria-pressed') === 'true') { snd.enabled = false; snd.stop(0.3); soundState(false); return; }
+      snd.enabled = true;
+      snd.unlock().then(ok => { soundState(ok); if (ok && !introDone && introTl && cues) snd.play(cues, introTl.time()); });
+    });
+  }
+
   function playFilm() {
     const vw = window.innerWidth / 100, vh = window.innerHeight / 100;
-    const scenes = $$('.iscene:not(.iscene--lang)', intro);
-    const [sMeet, sFlip, sWork, sWorlds, sAsk] = scenes;
-    const outline = $$('.imark__outline path', intro), ghost = $$('.ighost path', intro);
-    [...outline, ...ghost].forEach(p => p.setAttribute('pathLength', '1'));
+    const sMeet = $('.iscene--meet', intro), sReel = $('.iscene--reel', intro), sEarth = $('.iscene--earth', intro), sAsk = $('.iscene--ask', intro);
+    const scenes = [sMeet, sReel, sEarth, sAsk];
+    intro.scrollLeft = 0; intro.scrollTop = 0;
+    const outline = $$('.imark__outline path', intro);
+    outline.forEach(p => p.setAttribute('pathLength', '1'));
     gsap.set(scenes, { autoAlpha: 0, y: 0 });
-    gsap.set('.iscene--meet .ihead, .iscene--meet .ikick', { scale: 1 });
-    gsap.set([...outline, ...ghost], { strokeDasharray: 1, strokeDashoffset: 1, opacity: 1 });
+    gsap.set('.iscene--meet .ihead, .iscene--meet .ikick', { scale: 1, opacity: 1 });
+    gsap.set(outline, { strokeDasharray: 1, strokeDashoffset: 1, opacity: 1 });
     gsap.set('.imark', { scale: 1, y: 0, opacity: 1 });
     gsap.set('.imark__fill', { opacity: 0 });
     gsap.set('.imark__colon', { scale: 0 });
-    gsap.set('.ihead__l, .ikick, .istack span, .iscene__head > *, .iscene--worlds .ihead, .iask__mark, .iask__btns', { opacity: 0 });
-    gsap.set('.iscene__head, .ipanel', { opacity: 1 });
-    gsap.set('.irule', { scaleX: 0 });
-    gsap.set('.iwipe', { scale: 0 });
+    gsap.set('.ihead__l, .ikick, .iask__mark, .iask__btns', { opacity: 0 });
     gsap.set('.iask__cue span, .iask__notyet', { opacity: 0 });
-    gsap.set('.ipanel__rows li', { opacity: 0 });
-    $$('.ipanel__rows li').forEach(li => li.classList.remove('is-hot'));
     sAsk.classList.remove('is-live');
     const tiles = $$('.itile', intro).map(el => {
       const cs = getComputedStyle(el);
@@ -551,70 +600,221 @@
       gsap.set(el, { x: 0, y: 0, rotation: 0, scale: 0, opacity: 1, transform: 'none' });
       return { el, x, y, r };
     });
+    // the reel
+    const shots = $$('.ishot', sReel), burstShot = shots.pop();
+    const words = $$('.ireel__w', sReel), wBurst = $('.ireel__w--burst', sReel), wNext = $('.ireel__w--next', sReel);
+    const caps = $$('.ireel__c', sReel), thumbs = $$('img', burstShot);
+    const list = $('.ireel__list', sReel).textContent.split('|').map(s => s.trim()).filter(Boolean);
+    const plate = $('.ireel__plate', sReel), blob = $('.ireel__blob', sReel), colon = $('.ireel__colon', sReel);
+    const video = $('.ishot__video', sReel), flips = $$('.ishot__flip > *', sReel);
+    gsap.set([...shots, burstShot], { autoAlpha: 0, x: 0, y: 0, scale: 1 });
+    gsap.set(words, { opacity: 0, yPercent: 0, filter: 'none' }); gsap.set(colon, { scale: 1 }); gsap.set(caps, { opacity: 0, y: 0 });
+    gsap.set('.ireel__mark', { opacity: 0, x: 0, yPercent: 0 });
+    gsap.set(flips, { opacity: 0, rotationY: 0 }); gsap.set(thumbs, { opacity: 0, scale: 1 });
+    gsap.set('.idive, .ifold', { scale: 0 }); gsap.set(blob, { scale: 0 });
+    gsap.set(plate, { backgroundColor: tok('--w-red-bg') });
+    gsap.set(sReel, { '--reel-fg': tok('--color-cream'), '--reel-colon': tok('--color-cream') });
+    if (video) { const src = video.dataset[lang === 'ru' ? 'srcRu' : 'srcEn']; if (!video.currentSrc.endsWith(src)) { video.src = src; video.load(); } video.pause(); video.currentTime = 0; }
+    // the Earth
+    const canvas = $('.iearth', sEarth), qs = $$('.iearth__q', sEarth), as = $$('.iearth__a', sEarth), ecap = $('.iearth__cap', sEarth);
+    gsap.set(canvas, { clearProps: 'transform', opacity: 0 });
+    gsap.set(as, { opacity: 0 }); gsap.set(ecap, { opacity: 0 }); gsap.set(qs, { opacity: 1, y: 0 });
+    const q1 = chars(qs[0]), q2 = chars(qs[1]);
+    gsap.set([...q1, ...q2], { opacity: 0 });
+
+    const LOOK = [
+      ['--w-sr-bg', '--color-sr-text', '--color-sr-coral', 'sr'],
+      ['--w-ink-bg', '--color-cream', '--color-red', 'ink'],
+      ['--w-paper-bg', '--color-paper-ink', '--color-gomini', 'paper'],
+      ['--w-lg-bg', '--color-cream', '--color-lg-ok', 'lg'],
+      ['--w-red-bg', '--color-cream', '--color-cream', 'red'],
+      ['--w-sl-bg', '--color-cream', '--color-sl-pill', 'sl']
+    ].map(([bg, fg, c, world]) => ({ bg: tok(bg), fg: tok(fg), colon: tok(c), world }));
+
+    // cue sheet, shared with the score so every cut lands on a hit
+    const C = { draw: 0.1, colon: 1.55, shrink: 2.05, dive: 4.3, reel: 5.2, bar: 2 };
+    C.tiles = tiles.map((_, i) => 2.5 + i * 0.07);
+    C.burst = C.reel + C.bar * 6;
+    C.next = C.burst + 1.5;
+    C.ticks = Array.from({ length: 16 }, (_, i) => C.burst + 1.5 * Math.pow(i / 16, 0.62));
+    C.cut = C.next + 1.1;
+    C.earth = C.cut + 0.12;
+    const typing = (n, at) => Array.from({ length: n }, (_, i) => at + i * Math.min(0.04, 0.6 / n));
+    C.type1 = typing(q1.length, C.earth + 0.35);
+    C.a1 = C.earth + 1.15;
+    C.type2 = typing(q2.length, C.a1 + 0.75);
+    C.a2 = C.a1 + 1.7;
+    C.fold = C.a2 + 1.85;
+    C.ask = C.fold + 1.0;
+    C.wait = C.ask + 0.2; C.see = C.ask + 0.95; C.head = C.ask + 1.7; C.btns = C.ask + 2.3;
+    C.slam = C.reel + C.bar * 5 + 0.62;
+    cues = C;
+
     const world = (w, instant) => () => stage().world(w, instant);
     const rise = { opacity: 0, y: 46, filter: 'blur(6px)' }, risen = { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.8, ease: 'expo.out' };
-
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
     introTl = tl; if (window.GORI_DEBUG) window.__introTl = tl;
+
     // 1 · the mark draws as an outline, fills, the colon lands, the headline rises with the tiles
     tl.set(sMeet, { autoAlpha: 1 }, 0)
-      .to(outline, { strokeDashoffset: 0, duration: 1.3, stagger: 0.12, ease: 'power2.inOut' }, 0.1)
+      .to(outline, { strokeDashoffset: 0, duration: 1.3, stagger: 0.12, ease: 'power2.inOut' }, C.draw)
       .to('.imark__fill', { opacity: 1, duration: 0.45 }, 1.35)
       .to(outline, { opacity: 0, duration: 0.4 }, 1.6)
-      .to('.imark__colon', { scale: 1, duration: 0.5, ease: 'back.out(3)' }, 1.55)
-      .to('.imark', { scale: 0.3, y: -26 * vh, duration: 0.8, ease: 'expo.inOut' }, 2.05)
+      .to('.imark__colon', { scale: 1, duration: 0.5, ease: 'back.out(3)' }, C.colon)
+      .to('.imark', { scale: 0.3, y: -26 * vh, duration: 0.8, ease: 'expo.inOut' }, C.shrink)
       .fromTo('.iscene--meet .ihead__l', rise, { ...risen, stagger: 0.12 }, 2.4)
       .fromTo('.iscene--meet .ikick', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5 }, 2.9);
     tiles.forEach((tt, i) => {
-      tl.to(tt.el, { x: tt.x, y: tt.y, rotation: tt.r, scale: 1, duration: 0.9, ease: 'back.out(1.6)' }, 2.5 + i * 0.07)
+      tl.to(tt.el, { x: tt.x, y: tt.y, rotation: tt.r, scale: 1, duration: 0.9, ease: 'back.out(1.6)' }, C.tiles[i])
         .to(tt.el, { y: tt.y - 14, duration: 1.2, ease: 'sine.inOut' }, 3.4 + i * 0.07);
     });
-    // 2 · red flip: the colon takes the screen, three verbs stack up
-    tl.call(world('red'), null, 4.3)
-      .to('.iscene--meet .ihead, .iscene--meet .ikick, .imark', { opacity: 0, scale: 1.06, duration: 0.35, ease: 'power2.in' }, 4.2);
-    tiles.forEach(tt => tl.to(tt.el, { x: tt.x * 1.7, y: tt.y * 1.7, opacity: 0, duration: 0.45, ease: 'power2.in' }, 4.2));
-    tl.set(sFlip, { autoAlpha: 1 }, 4.45)
-      .fromTo('.ikick--flip', { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.4 }, 4.5)
-      .fromTo('.istack span', { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.65, stagger: 0.32, ease: 'expo.out' }, 4.6)
-      .to('.irule', { scaleX: 1, duration: 1, ease: 'power2.inOut' }, 4.8)
-      .to(ghost, { strokeDashoffset: 0, duration: 1.8, stagger: 0.1, ease: 'power1.inOut' }, 4.5);
-    // 3 · the work: a tilted panel lands flat, a highlight walks the rows
-    tl.call(world('paper'), null, 6.75)
-      .to(sFlip, { autoAlpha: 0, y: -30, duration: 0.35, ease: 'power2.in' }, 6.6)
-      .set(sWork, { autoAlpha: 1 }, 6.8)
-      .fromTo('.iscene__head > *', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'expo.out' }, 6.85)
-      .fromTo('.ipanel', { opacity: 0, rotationX: 42, y: 160, scale: 0.9 }, { opacity: 1, rotationX: 0, y: 0, scale: 1, duration: 1.15, ease: 'expo.out' }, 7.0)
-      .fromTo('.ipanel__rows li', { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.08, ease: 'expo.out' }, 7.35);
-    const rows = $$('.ipanel__rows li');
-    [0, 1, 2, 3].forEach((n, i) => tl.call(() => rows.forEach((r, k) => r.classList.toggle('is-hot', k === n)), null, 8.0 + i * 0.4));
-    // 4 · four worlds deal in over rings, then a paper circle wipes them away
-    tl.call(world('ink'), null, 9.75)
-      .to('.ipanel', { opacity: 0, y: -40, rotationX: -12, duration: 0.4, ease: 'power2.in' }, 9.6)
-      .to('.iscene__head', { opacity: 0, duration: 0.3 }, 9.6)
-      .set(sWork, { autoAlpha: 0 }, 10.0)
-      .set(sWorlds, { autoAlpha: 1 }, 9.8)
-      .fromTo('.iscene--worlds .ikick, .iscene--worlds .ihead', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'expo.out' }, 9.85)
-      .fromTo('.irings', { opacity: 0, scale: 0.8 }, { opacity: 0.7, scale: 1, duration: 1.6, ease: 'expo.out' }, 9.8)
-      .fromTo('.icard', { opacity: 0, rotationY: -70, z: -400, y: 80, scale: 1 }, { opacity: 1, rotationY: 0, z: 0, y: 0, scale: 1, duration: 0.9, stagger: 0.12, ease: 'expo.out' }, 10.0)
-      .to('.icard', { y: -10, duration: 0.6, stagger: 0.08, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 10.9)
-      .to('.icard', { scale: 0.6, opacity: 0, duration: 0.4, stagger: 0.05, ease: 'power2.in' }, 11.6)
-      .to('.iwipe', { scale: 1, duration: 0.85, ease: 'expo.inOut' }, 11.75)
-      .call(world('paper', true), null, 12.55)
-      .set(sWorlds, { autoAlpha: 0 }, 12.6);
-    // 5 · the question, set like an end card
-    tl.set(sAsk, { autoAlpha: 1 }, 12.6)
-      .fromTo('.iask__mark', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(2)' }, 12.65)
-      .to('.iask__c1', { opacity: 1, duration: 0.2 }, 12.8).to('.iask__c1', { opacity: 0, duration: 0.2 }, 13.45)
-      .to('.iask__c2', { opacity: 1, duration: 0.2 }, 13.55).to('.iask__c2', { opacity: 0, duration: 0.2 }, 14.25)
-      .fromTo('.iscene--ask .ihead__l', rise, { ...risen, stagger: 0.18 }, 14.3)
-      .fromTo('.iask__btns', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', onStart: () => sAsk.classList.add('is-live') }, 14.9)
-      .add(() => endIntro('auto'), 21);
+    // 2 · into the colon: everything leaves but the red dot, which opens into the screen
+    tl.to('.iscene--meet .ihead, .iscene--meet .ikick, .imark__fill', { opacity: 0, duration: 0.3, ease: 'power2.in' }, C.dive - 0.2);
+    tiles.forEach(tt => tl.to(tt.el, { x: tt.x * 1.7, y: tt.y * 1.7, opacity: 0, duration: 0.45, ease: 'power2.in' }, C.dive - 0.25));
+    tl.to('.imark__colon', { scale: 1.35, duration: 0.15, ease: 'power2.out' }, C.dive - 0.15)
+      .call(() => {
+        const r = $('.imark__colon', intro).getBoundingClientRect();
+        gsap.set('.idive', { x: r.left + r.width / 2, y: r.bottom - r.width / 2 });
+      }, null, C.dive - 0.01)
+      .fromTo('.idive', { scale: 0 }, { scale: 1, duration: 0.55, ease: 'expo.in' }, C.dive)
+      .call(world('red', true), null, C.dive + 0.5)
+      .set(sReel, { autoAlpha: 1 }, C.dive + 0.52)
+      .set(sMeet, { autoAlpha: 0 }, C.dive + 0.56)
+      .set('.idive', { scale: 0 }, C.dive + 0.58)
+      .fromTo('.ireel__mark', { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.5, ease: 'expo.out' }, C.dive + 0.55)
+      .call(() => {
+        const r = colon.getBoundingClientRect();
+        gsap.set(blob, { x: r.left + r.width / 2, y: r.bottom - r.width / 2 });
+      }, null, C.reel - 0.3);
+
+    // 3 · the reel: GORI: stays, what comes after the colon changes on every downbeat
+    function look(L, at) {
+      tl.set(blob, { backgroundColor: L.bg, scale: 0 }, at - 0.22)
+        .to(blob, { scale: 1, duration: 0.5, ease: 'expo.inOut' }, at - 0.22)
+        .set(plate, { backgroundColor: L.bg }, at + 0.3)
+        .set(blob, { scale: 0 }, at + 0.31)
+        .set(sReel, { '--reel-fg': L.fg, '--reel-colon': L.colon }, at - 0.02)
+        .call(world(L.world, true), null, at)
+        .fromTo(colon, { scale: 1.5 }, { scale: 1, duration: 0.5, ease: 'back.out(3)', immediateRender: false }, at);
+    }
+    function swap(el, prev, at) {
+      if (prev) tl.to(prev, { yPercent: -45, opacity: 0, filter: 'blur(8px)', duration: 0.26, ease: 'power2.in' }, at - 0.26);
+      tl.fromTo(el, { yPercent: 55, opacity: 0, filter: 'blur(10px)' }, { yPercent: 0, opacity: 1, filter: 'blur(0px)', duration: 0.7, ease: 'expo.out', immediateRender: false }, at);
+    }
+    const IN = [
+      (s, at) => tl
+        .fromTo($('.ishot__screen', s), { opacity: 0, rotationY: -30, x: 160, z: -200 }, { opacity: 1, rotationY: -9, x: 0, z: 0, duration: 1.1, ease: 'expo.out' }, at)
+        .fromTo($('.ishot__icon', s), { opacity: 0, scale: 0.3, rotation: -24 }, { opacity: 1, scale: 1, rotation: -6, duration: 0.9, ease: 'back.out(1.8)' }, at + 0.06)
+        .fromTo($('.ishot__capsule', s), { opacity: 0, y: 50, scale: 0.7 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, at + 0.3)
+        .fromTo($('.ishot__tip', s), { opacity: 0, y: 90, rotation: 10 }, { opacity: 1, y: 0, rotation: 3, duration: 0.9, ease: 'expo.out' }, at + 0.6)
+        .to($('.ishot__icon', s), { y: -12, duration: 1.2, ease: 'sine.inOut' }, at + 0.8),
+      (s, at) => {
+        const strip = $('.ishot__strip', s);
+        tl.fromTo(strip, { x: 0, opacity: 0 }, { x: () => -strip.scrollWidth * 0.36, opacity: 1, duration: C.bar + 0.4, ease: 'none' }, at)
+          .fromTo($('.ishot__phone', s), { y: 70 * vh, rotation: 14 }, { y: 0, rotation: -3, duration: 0.95, ease: 'expo.out' }, at)
+          .call(() => { if (video) { video.currentTime = 0; video.play().catch(() => {}); } }, null, at);
+      },
+      (s, at) => {
+        tl.fromTo($('.ishot__rings', s), { opacity: 0 }, { opacity: 1, duration: 0.6 }, at)
+          .fromTo(flips[0], { opacity: 1, rotationY: -90, scale: 0.7 }, { rotationY: 0, scale: 1, duration: 0.6, ease: 'back.out(1.6)', immediateRender: false }, at);
+        [0.5, 0.95, 1.4].forEach((d, i) => {
+          tl.to(flips[i], { rotationY: 90, duration: 0.16, ease: 'power2.in' }, at + d)
+            .set(flips[i], { opacity: 0 }, at + d + 0.16)
+            .fromTo(flips[i + 1], { opacity: 1, rotationY: -90 }, { rotationY: 0, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, at + d + 0.16);
+        });
+      },
+      (s, at) => {
+        const win = $('.ishot__win', s), img = $('.ishot__pan img', s);
+        tl.fromTo(win, { opacity: 0, rotationX: 34, y: 120 }, { opacity: 1, rotationX: 0, y: 0, duration: 0.9, ease: 'expo.out' }, at)
+          .fromTo(img, { x: 0 }, { x: () => -Math.max(0, img.offsetWidth - win.offsetWidth), duration: 1.7, ease: 'power1.inOut' }, at + 0.1)
+          .fromTo($('.ishot__scan', s), { x: 0, opacity: 1 }, { x: () => win.offsetWidth, duration: 1.2, ease: 'power1.inOut' }, at + 0.25)
+          .fromTo($('.ishot__ok', s), { opacity: 0, scale: 0, rotation: -40 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: 'back.out(2.6)' }, at + 1.35);
+      },
+      (s, at) => tl
+        .fromTo($('.ishot__hubs', s), { opacity: 0, x: -140, rotation: -12 }, { opacity: 1, x: 0, rotation: -3, duration: 0.85, ease: 'expo.out' }, at)
+        .fromTo($('.ishot__proj', s), { opacity: 0, x: 180, y: -40, rotation: 10 }, { opacity: 1, x: 0, y: 0, rotation: 2, duration: 0.85, ease: 'expo.out' }, at + 0.14)
+        .fromTo($('.ishot__tasks', s), { opacity: 0, y: 180, rotation: -8 }, { opacity: 1, y: 0, rotation: -1.5, duration: 0.85, ease: 'expo.out' }, at + 0.28),
+      (s, at) => tl
+        .fromTo($('.ishot__win', s), { opacity: 0, scale: 0.86, rotation: -5 }, { opacity: 1, scale: 1, rotation: -2, duration: 0.8, ease: 'expo.out' }, at)
+        .fromTo($('.ishot__diploma', s), { opacity: 1, y: -110 * vh, rotation: -34, scale: 1.7 }, { y: 0, rotation: 7, scale: 1, duration: C.slam - at - 0.4, ease: 'power4.in' }, at + 0.4)
+        .fromTo(s, { x: -16, y: 10 }, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.3)' }, C.slam)
+    ];
+    shots.forEach((s, i) => {
+      const at = C.reel + i * C.bar;
+      look(LOOK[i], at);
+      swap(words[i], words[i - 1], at);
+      if (i) tl.to(caps[i - 1], { opacity: 0, y: -8, duration: 0.2 }, at - 0.2);
+      tl.fromTo(caps[i], { opacity: 0, y: 10 }, { opacity: 0.85, y: 0, duration: 0.5, ease: 'expo.out' }, at + 0.15);
+      if (i) tl.to(shots[i - 1], { opacity: 0, scale: 1.06, duration: 0.2, ease: 'power2.in' }, at - 0.2).set(shots[i - 1], { autoAlpha: 0 }, at);
+      tl.set(s, { autoAlpha: 1, scale: 1 }, at);
+      IN[i](s, at);
+    });
+    tl.call(() => { if (video) video.pause(); }, null, C.reel + C.bar * 2 + 0.1);
+
+    // 4 · the burst: the word after the colon stutters, faster and faster
+    const last = shots[shots.length - 1];
+    tl.to(words[5], { yPercent: -105, duration: 0.2, ease: 'power3.in' }, C.burst - 0.2).set(words[5], { opacity: 0 }, C.burst)
+      .to(caps[5], { opacity: 0, duration: 0.2 }, C.burst - 0.2)
+      .to(last, { opacity: 0, scale: 0.9, duration: 0.2 }, C.burst - 0.2).set(last, { autoAlpha: 0 }, C.burst)
+      .set(burstShot, { autoAlpha: 1 }, C.burst)
+      .set(wBurst, { opacity: 1, yPercent: 0 }, C.burst);
+    C.ticks.forEach((t, i) => {
+      const L = LOOK[(i + 1) % LOOK.length];
+      tl.call(() => { wBurst.textContent = list[i % list.length]; }, null, t)
+        .set(plate, { backgroundColor: L.bg }, t)
+        .set(sReel, { '--reel-fg': L.fg, '--reel-colon': L.colon }, t)
+        .fromTo(thumbs[i % thumbs.length], { opacity: 1, scale: 0.6 }, { scale: 1, duration: 0.2, ease: 'back.out(2)', immediateRender: false }, t);
+    });
+    tl.set(wBurst, { opacity: 0 }, C.next)
+      .set(plate, { backgroundColor: tok('--w-ink-bg') }, C.next)
+      .set(sReel, { '--reel-fg': tok('--color-cream'), '--reel-colon': tok('--color-red') }, C.next)
+      .call(world('ink', true), null, C.next)
+      .to(thumbs, { opacity: 0, scale: 1.3, duration: 0.45, stagger: 0.02, ease: 'power2.in' }, C.next)
+      .fromTo(wNext, { yPercent: 55, opacity: 0, filter: 'blur(10px)' }, { yPercent: 0, opacity: 1, filter: 'blur(0px)', duration: 0.8, ease: 'expo.out', immediateRender: false }, C.next)
+      .fromTo(colon, { scale: 1.8 }, { scale: 1, duration: 0.7, ease: 'back.out(3)', immediateRender: false }, C.next)
+      .to(['.ireel__mark', wNext], { yPercent: -30, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'power2.in' }, C.cut - 0.35)
+      .set(sReel, { autoAlpha: 0 }, C.cut)
+      .set(burstShot, { autoAlpha: 0 }, C.cut);
+
+    // 5 · the Earth: based in planet Earth, working with everyone on it
+    const E = () => earth || (earth = window.GORI_EARTH && window.GORI_EARTH.create(canvas, { land: '--color-cream', arc: '--color-red', pin: '--color-red', yaw: 60, pitch: 24, spin: 9, onLand: () => snd && snd.ping() }));
+    tl.set(sEarth, { autoAlpha: 1 }, C.earth)
+      .call(() => { const e = E(); if (!e) return; e.size(); e.state.fold = 0; e.state.zoom = 3.4; e.state.yaw = 150; e.start();
+        gsap.to(e.state, { zoom: 1, yaw: 10, duration: 1.8, ease: 'expo.out' }); }, null, C.earth)
+      .fromTo(canvas, { opacity: 0 }, { opacity: 1, duration: 0.5 }, C.earth);
+    q1.forEach((c, i) => tl.set(c, { opacity: 1 }, C.type1[i]));
+    tl.fromTo(as[0], { opacity: 0, yPercent: 50, filter: 'blur(10px)' }, { opacity: 1, yPercent: 0, filter: 'blur(0px)', duration: 0.7, ease: 'expo.out' }, C.a1)
+      .call(() => { const e = E(); if (e) gsap.fromTo(e.state, { zoom: 1.08 }, { zoom: 1, duration: 0.8, ease: 'expo.out' }); }, null, C.a1);
+    q2.forEach((c, i) => tl.set(c, { opacity: 1 }, C.type2[i]));
+    tl.fromTo(as[1], { opacity: 0, yPercent: 50, filter: 'blur(10px)' }, { opacity: 1, yPercent: 0, filter: 'blur(0px)', duration: 0.7, ease: 'expo.out' }, C.a2)
+      .call(() => { const e = E(); if (e) { e.burst(18, 1.4); gsap.fromTo(e.state, { zoom: 1.1 }, { zoom: 1, duration: 0.9, ease: 'expo.out' }); } }, null, C.a2)
+      .fromTo(ecap, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.6 }, C.a2 + 0.55)
+      // the world folds into one red dot, the dot becomes paper
+      .to([...qs, ...as, ecap], { opacity: 0, y: -24, duration: 0.3, stagger: 0.03, ease: 'power2.in' }, C.fold - 0.25)
+      .to(canvas, { x: () => { const r = canvas.getBoundingClientRect(); return '+=' + (window.innerWidth / 2 - (r.left + r.width / 2)); },
+        y: () => { const r = canvas.getBoundingClientRect(); return '+=' + (window.innerHeight / 2 - (r.top + r.height / 2)); }, duration: 0.55, ease: 'power3.inOut' }, C.fold)
+      .call(() => { const e = E(); if (e) gsap.to(e.state, { fold: 1, duration: 0.55, ease: 'expo.in' }); }, null, C.fold)
+      .fromTo('.ifold', { scale: 0 }, { scale: 1, duration: 0.45, ease: 'expo.in' }, C.fold + 0.55)
+      .call(world('paper', true), null, C.ask - 0.02)
+      .set(sEarth, { autoAlpha: 0 }, C.ask)
+      .call(() => { if (earth) earth.stop(); }, null, C.ask);
+
+    // 6 · the question, set like an end card
+    tl.set(sAsk, { autoAlpha: 1 }, C.ask)
+      .fromTo('.iask__mark', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(2)' }, C.ask + 0.05)
+      .to('.iask__c1', { opacity: 1, duration: 0.2 }, C.wait).to('.iask__c1', { opacity: 0, duration: 0.2 }, C.see - 0.1)
+      .to('.iask__c2', { opacity: 1, duration: 0.2 }, C.see).to('.iask__c2', { opacity: 0, duration: 0.2 }, C.head - 0.1)
+      .fromTo('.iscene--ask .ihead__l', rise, { ...risen, stagger: 0.18 }, C.head)
+      .fromTo('.iask__btns', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', onStart: () => sAsk.classList.add('is-live') }, C.btns)
+      .add(() => endIntro('auto'), C.btns + 6.5);
+
+    soundState(!!(snd && snd.play(C, 0)));
   }
   $$('[data-intro-end]').forEach(b => b.addEventListener('click', () => endIntro(b.dataset.introEnd)));
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (!introDone) endIntro('skip'); else if (!lb.hidden) closeLb(); }
   });
-  $('#replay').addEventListener('click', () => { window.scrollTo(0, 0); playIntro({ askLang: false }); });
+  $('#replay').addEventListener('click', () => { if (snd && snd.enabled) snd.unlock(); window.scrollTo(0, 0); playIntro({ askLang: false }); });
 
   /* ---------------- boot ---------------- */
   const params = new URLSearchParams(location.search);
