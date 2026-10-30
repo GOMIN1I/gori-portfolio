@@ -405,6 +405,7 @@
   const intro = $('#intro');
   const html = document.documentElement;
   const stage = () => window.GORI_STAGE || { world() {}, lock() {} };
+  const radio = () => window.GORI_MUSIC || { arm() {}, hush() {} };
   let introTl = null, introDone = true;
   function heroIn() {
     gsap.fromTo('.hero__mark', { opacity: 0, scale: 0.92, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: 'expo.out', clearProps: 'opacity,transform' });
@@ -422,7 +423,7 @@
       intro.classList.remove('is-playing'); intro.setAttribute('aria-hidden', 'true');
       html.classList.remove('is-intro'); document.body.style.overflow = '';
       stage().lock(false); stage().world('paper', true);
-      if (!reduce) heroIn(); startVerbs();
+      if (!reduce) heroIn(); startVerbs(); radio().arm();
       if (window.ScrollTrigger) ScrollTrigger.refresh();
       const target = $('.hero__actions a'); if (target && kind !== 'auto') target.focus({ preventScroll: true });
     };
@@ -540,9 +541,10 @@
   }
 
   function playIntro({ askLang = true } = {}) {
-    if (!window.gsap) { startVerbs(); return; }
-    if (reduce && !askLang) { startVerbs(); return; }
+    if (!window.gsap) { startVerbs(); radio().arm(); return; }
+    if (reduce && !askLang) { startVerbs(); radio().arm(); return; }
     introDone = false;
+    radio().hush();
     window.scrollTo(0, 0);
     html.classList.add('is-intro'); stage().lock(true); stage().world('paper', true);
     intro.style.opacity = 1; intro.classList.add('is-playing'); intro.setAttribute('aria-hidden', 'false');
@@ -823,5 +825,5 @@
   applyLang(initial, { save: initial !== 'en' || params.has('lang') });
   const forceIntro = params.has('intro');
   // a link with ?lang= already answers the language question
-  if (!store.sget('gori-intro-seen') || forceIntro) playIntro({ askLang: !params.has('lang') }); else startVerbs();
+  if (!store.sget('gori-intro-seen') || forceIntro) playIntro({ askLang: !params.has('lang') }); else { startVerbs(); radio().arm(); }
 })();

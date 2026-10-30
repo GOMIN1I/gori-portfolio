@@ -817,6 +817,41 @@
   <button type="button" class="lightbox__close" data-i18n="lb.close">Close</button>
   <img alt="Full BPMN diagram of the target refund process" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-i18n-attr="alt:lb.alt">
 </div>
+<aside class="player" id="player" hidden aria-label="Music" data-i18n-attr="aria-label:pl.label">
+  <div class="player__panel" id="player-panel" hidden>
+    <div class="player__now">
+      <img class="player__art player__art--big" alt="" width="96" height="96">
+      <div class="player__now-text">
+        <p class="player__kick" data-i18n="pl.now">Now playing</p>
+        <p class="player__title"></p>
+        <p class="player__artist"></p>
+      </div>
+    </div>
+    <div class="player__bar">
+      <span class="player__t0">0:00</span>
+      <input class="player__seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Position in track" data-i18n-attr="aria-label:pl.seek">
+      <span class="player__t1">0:00</span>
+    </div>
+    <div class="player__ctrls">
+      <button class="player__btn player__prev" type="button" aria-label="Previous track" data-i18n-attr="aria-label:pl.prev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M19 5 9 12l10 7z"/></svg></button>
+      <button class="player__btn player__play player__play--big" type="button" aria-pressed="false" aria-label="Play" data-i18n-attr="aria-label:pl.play"><svg class="player__i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L19.5 12z"/></svg><svg class="player__i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <button class="player__btn player__next" type="button" aria-label="Next track" data-i18n-attr="aria-label:pl.next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5v14M5 5l10 7-10 7z"/></svg></button>
+      <label class="player__vol"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><input type="range" min="0" max="100" step="1" value="60" aria-label="Volume" data-i18n-attr="aria-label:pl.vol"></label>
+    </div>
+    <p class="player__kick player__kick--list" data-i18n="pl.list">Playlist</p>
+    <ol class="player__list"></ol>
+  </div>
+  <div class="player__pill">
+    <button class="player__open" type="button" aria-expanded="false" aria-controls="player-panel" aria-label="Open the player" data-i18n-attr="aria-label:pl.open">
+      <img class="player__art" alt="" width="40" height="40">
+      <span class="player__meta"><span class="player__title"></span><span class="player__artist"></span></span>
+      <span class="player__eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </button>
+    <label class="player__vol player__vol--pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><input type="range" min="0" max="100" step="1" value="60" aria-label="Volume" data-i18n-attr="aria-label:pl.vol"></label>
+    <button class="player__btn player__play" type="button" aria-pressed="false" aria-label="Play" data-i18n-attr="aria-label:pl.play"><svg class="player__i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15L19.5 12z"/></svg><svg class="player__i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+    <button class="player__btn player__next" type="button" aria-label="Next track" data-i18n-attr="aria-label:pl.next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 5v14M5 5l10 7-10 7z"/></svg></button>
+  </div>
+</aside>
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -825,6 +860,7 @@
 <script src="i18n.js"></script>
 <script src="earth.js"></script>
 <script src="sound.js"></script>
+<script src="player.js"></script>
 <script src="motion.js"></script>
 <script src="main.js"></script>
 </body>
