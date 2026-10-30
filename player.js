@@ -186,9 +186,22 @@
     root.classList.toggle('is-open', on);
     if (on && window.gsap && !reduce) window.gsap.fromTo(panel, { opacity: 0, y: 14, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'expo.out', clearProps: 'all' });
   }
-  opener.addEventListener('click', () => openPanel(panel.hidden));
+  // folded to a record until someone reaches for it
+  let foldT = 0;
+  const wide = on => { clearTimeout(foldT); root.classList.toggle('is-wide', on); if (!on && !panel.hidden) openPanel(false); };
+  const hover = window.matchMedia('(hover: hover)').matches;
+  if (hover) {
+    root.addEventListener('mouseenter', () => wide(true));
+    root.addEventListener('mouseleave', () => { foldT = setTimeout(() => wide(false), 700); });
+  }
+  root.addEventListener('focusin', () => wide(true));
+  root.addEventListener('focusout', e => { if (!root.contains(e.relatedTarget) && !root.matches(':hover')) foldT = setTimeout(() => wide(false), 300); });
+  opener.addEventListener('click', () => {
+    if (!root.classList.contains('is-wide')) { wide(true); return; }
+    openPanel(panel.hidden);
+  });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) { openPanel(false); opener.focus(); } });
-  document.addEventListener('pointerdown', e => { if (!panel.hidden && !root.contains(e.target)) openPanel(false); });
+  document.addEventListener('pointerdown', e => { if (!root.contains(e.target)) wide(false); });
 
   if ('mediaSession' in navigator) {
     const ms = navigator.mediaSession, set = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) { /* unsupported */ } };

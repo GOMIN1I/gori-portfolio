@@ -1125,3 +1125,12 @@ html.is-intro main, html.is-intro .nav, html.is-intro .foot { visibility: hidden
 .player input[type="range"]::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--pl-fg) calc(var(--v, 0.6) * 100%), var(--pl-line) 0); }
 .player__seek::-webkit-slider-runnable-track { background: var(--pl-line) !important; }
 @media (max-width: 520px) { .player__vol--pill { display: none; } }
+/* collapsed to a spinning record; opens on hover, focus or a tap */
+.player__pill { transition: max-width 520ms var(--ease), box-shadow 300ms ease; }
+.player:not(.is-wide) .player__pill { max-width: 52px; }
+.player:not(.is-wide) .player__pill::after { opacity: 0; }
+.player:not(.is-wide) .player__pill > :not(.player__open), .player:not(.is-wide) .player__open > :not(.player__art) { opacity: 0; pointer-events: none; }
+.player__pill > *, .player__open > * { transition: opacity 260ms ease; }
+.player.is-wide .player__pill > *, .player.is-wide .player__open > * { transition-delay: 120ms; }
+.player:not(.is-wide) .player__art { box-shadow: 0 0 0 2px var(--color-red); }
+.player:not(.is-wide):not(.is-playing) .player__art { box-shadow: 0 0 0 2px var(--pl-line); }
