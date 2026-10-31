@@ -81,7 +81,8 @@
 
   /* ---------------- nav ---------------- */
   const nav = $('#nav');
-  const onScroll = () => nav.classList.toggle('is-solid', window.scrollY > 40);
+  let navSolid = null;
+  const onScroll = () => { const on = window.scrollY > 40; if (on !== navSolid) { navSolid = on; nav.classList.toggle('is-solid', on); } };
   window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
   const burger = $('.nav__burger'), menu = $('#menu');
   burger.addEventListener('click', () => {
@@ -545,7 +546,7 @@
     introDone = false;
     film.pause(); radio().hush();
     if (snd && snd.enabled) snd.prepare();
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: "instant" });
     html.classList.add('is-intro'); stage().lock(true); stage().world('paper', true);
     intro.style.opacity = 1; intro.classList.add('is-playing'); intro.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
@@ -816,7 +817,7 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (!introDone) endIntro('skip'); else if (!lb.hidden) closeLb(); }
   });
-  $('#replay').addEventListener('click', () => { if (snd && snd.enabled) snd.unlock(); window.scrollTo(0, 0); playIntro({ askLang: false }); });
+  $('#replay').addEventListener('click', () => { if (snd && snd.enabled) snd.unlock(); window.scrollTo({ top: 0, behavior: "instant" }); playIntro({ askLang: false }); });
 
   /* ---------------- boot ---------------- */
   const params = new URLSearchParams(location.search);

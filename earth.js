@@ -29,6 +29,7 @@
   function create(canvas, opts = {}) {
     const ctx = canvas.getContext('2d');
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const coarse = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     const col = { land: rgb(opts.land || '--color-cream'), arc: rgb(opts.arc || '--color-red'), pin: rgb(opts.pin || '--color-red') };
     // fold: 0 is the globe, 1 is the globe collapsed into one red dot
     const s = { yaw: opts.yaw != null ? opts.yaw : -20, pitch: opts.pitch != null ? opts.pitch : 22, spin: opts.spin != null ? opts.spin : 7, zoom: 1, fold: 0 };
@@ -36,10 +37,11 @@
     const arcs = [], rings = [];
 
     function size() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
       const r = canvas.getBoundingClientRect();
       w = Math.max(1, r.width); h = Math.max(1, r.height);
-      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      const cw = Math.round(w * dpr), ch = Math.round(h * dpr);
+      if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
       if (!running) draw(performance.now());
     }
     function rot(v, cy, sy, cp, sp) {
@@ -126,10 +128,11 @@
     }
     function frame(now) {
       raf = 0; if (!running) return;
+      raf = requestAnimationFrame(frame);
+      if (coarse && prev && now - prev < 30) return;
       const dt = prev ? Math.min(0.05, (now - prev) / 1000) : 0; prev = now;
       if (!drag) s.yaw -= s.spin * dt;
       draw(now);
-      raf = requestAnimationFrame(frame);
     }
     function start() { if (running) return; running = true; prev = 0; if (reduce) { draw(performance.now()); running = false; return; } raf = requestAnimationFrame(frame); }
     function stop() { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }

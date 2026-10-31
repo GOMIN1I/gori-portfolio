@@ -8,6 +8,7 @@
   const html = document.documentElement;
   const G = window.gsap, ST = window.ScrollTrigger;
   const hasG = !!(G && ST);
+  const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   if (hasG) G.registerPlugin(ST);
 
   /* ---------------- colour tokens → rgb (tokens stay the source of truth) ---------------- */
@@ -55,7 +56,7 @@ uniform vec2 r;uniform float t;uniform vec2 m;uniform float sc;uniform float cel
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
 return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
-float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.07+vec2(3.1,1.7);a*=.5;}return v;}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<${mobile ? 3 : 4};i++){v+=a*n(p);p=p*2.07+vec2(3.1,1.7);a*=.5;}return v;}
 void main(){
   vec2 c=gl_FragCoord.xy*cell;vec2 uv=c/r;vec2 p=c/r.y;
   vec2 dir=vec2(.8,.6);
@@ -93,10 +94,14 @@ void main(){
     [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(k => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
     const fbo = gl.createFramebuffer();
     let w = 0, hgt = 0, k = 1, cell = 9, gw = 1, gh = 1, mx = -9999, my = -9999, tx = -9999, ty = -9999, raf = 0, last = 0;
-    const start = performance.now(), step = mobile ? 42 : 33;
+    const start = performance.now();
+    let step = mobile ? 42 : 33, tick = 0, seen = 0, slow = 0;
     function size() {
       k = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.25);
-      w = Math.max(2, Math.round(window.innerWidth * k)); hgt = Math.max(2, Math.round(window.innerHeight * k));
+      // clientHeight follows 100lvh, so a phone's address bar sliding away never reallocates the canvas
+      const nw = Math.max(2, Math.round(canvas.clientWidth * k)), nh = Math.max(2, Math.round(canvas.clientHeight * k));
+      if (nw === w && nh === hgt) return;
+      w = nw; hgt = nh;
       canvas.width = w; canvas.height = hgt;
       cell = (mobile ? 7 : 9) * k;
       gw = Math.ceil(w / cell); gh = Math.ceil(hgt / cell);
@@ -120,7 +125,11 @@ void main(){
     }
     function frame(now) {
       raf = 0;
-      if (document.hidden) return;
+      if (document.hidden) { tick = 0; return; }
+      // the stage is decoration: when a device falls behind, it gives its frames back to the scroll
+      const dt = now - tick; tick = now;
+      if (dt < 250 && ++seen >= 90) { if (slow > 30) step = Math.min(125, step * 1.5); seen = slow = 0; }
+      if (dt > 26 && dt < 250) slow++;
       if (now - last >= step) { draw(now); last = now; }
       if (!reduce) raf = requestAnimationFrame(frame);
     }
@@ -162,13 +171,19 @@ void main(){
   let ready = false;
   const scrubs = [];
   function makeScrubs() {
-    scrubs.splice(0).forEach(tw => { if (tw.scrollTrigger) tw.scrollTrigger.kill(); tw.kill(); });
+    scrubs.splice(0).forEach(st => st.kill());
     $$('.scrub').forEach(p => {
       split(p);
-      const ws = $$('.w', p);
-      ws.forEach((wv, i) => wv.style.setProperty('--i', i));
-      p.style.setProperty('--n', ws.length);
-      scrubs.push(G.fromTo(p, { '--fill': 0 }, { '--fill': 1, ease: 'none', scrollTrigger: { trigger: p, start: 'top 86%', end: 'bottom 55%', scrub: true } }));
+      // only the few words at the reading edge are touched per frame, not the whole paragraph
+      const ws = $$('.w', p), n = ws.length, SOFT = 8;
+      let was = 0;
+      const paint = fill => {
+        const head = fill * (n + SOFT);
+        const from = Math.max(0, Math.floor(Math.min(was, head)) - SOFT - 1), to = Math.min(n - 1, Math.ceil(Math.max(was, head)));
+        for (let i = from; i <= to; i++) ws[i].style.opacity = Math.min(1, Math.max(0.18, (head - i) / SOFT)).toFixed(2);
+        was = head;
+      };
+      scrubs.push(ST.create({ trigger: p, start: 'top 86%', end: 'bottom 55%', onUpdate: self => paint(self.progress), onRefresh: self => paint(self.progress) }));
     });
   }
 
@@ -181,29 +196,34 @@ void main(){
       return;
     }
 
+    html.classList.add('is-motion');
     ST.config({ ignoreMobileResize: true, limitCallbacks: true });
     /* pause looping CSS motion that is off screen */
     const offIo = new IntersectionObserver(es => es.forEach(e => e.target.classList.toggle('is-off', !e.isIntersecting)), { rootMargin: '120px 0px' });
     $$('.hero, main > section, .foot').forEach(s => offIo.observe(s));
-    /* smooth scroll */
-    if (window.Lenis) {
+    /* smooth scroll: wheels only. Lenis listens to touchmove with passive: false, which would
+       make every finger scroll wait for the main thread, so touch stays on the native scroller */
+    if (window.Lenis && !touch) {
       const lenis = new window.Lenis({ lerp: 0.09, smoothWheel: true });
       STAGE.lenis = lenis; window.GORI_LENIS = lenis;
       lenis.on('scroll', ST.update);
       G.ticker.add(time => lenis.raf(time * 1000)); G.ticker.lagSmoothing(0);
       if (html.classList.contains('is-intro')) lenis.stop();
-      document.addEventListener('click', e => {
-        const a = e.target.closest('a[href^="#"]'); if (!a) return;
-        const id = a.getAttribute('href'); if (id.length < 2) return;
-        const el = document.querySelector(id); if (!el) return;
-        e.preventDefault();
-        lenis.scrollTo(el, { offset: id === '#top' ? 0 : -8, duration: 1.4 });
-      });
     }
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href^="#"]'); if (!a) return;
+      const id = a.getAttribute('href'); if (id.length < 2) return;
+      const el = document.querySelector(id); if (!el) return;
+      e.preventDefault();
+      const offset = id === '#top' ? 0 : -8;
+      if (window.GORI_LENIS) window.GORI_LENIS.scrollTo(el, { offset, duration: 1.4 });
+      else window.scrollTo({ top: id === '#top' ? 0 : el.getBoundingClientRect().top + window.scrollY + offset, behavior: 'smooth' });
+    });
 
     /* hero: fly through the colon */
     const tiles = $$('.htile');
-    const heroTl = G.timeline({ scrollTrigger: { trigger: '.hero', start: 'top top', end: '+=95%', scrub: 0.6, pin: true, anticipatePin: 1, invalidateOnRefresh: true } });
+    // the pins are position: sticky, held by the compositor, so they cannot shake while the finger moves
+    const heroTl = G.timeline({ scrollTrigger: { trigger: '.hero-run', start: 'top top', end: 'bottom bottom', scrub: touch ? 0.25 : 0.6, invalidateOnRefresh: true } });
     const toRgb = name => 'rgb(' + rgb(name).map(v => Math.round(v * 255)).join(',') + ')';
     const hero = $('.hero'), inner = $('.hero__inner'), wrap = $('.hero__markwrap');
     const dive = document.createElement('div'); dive.className = 'hero__dive'; dive.setAttribute('aria-hidden', 'true'); hero.appendChild(dive);
@@ -214,7 +234,7 @@ void main(){
       geo.cy = ir.top - hr.top + wrap.offsetTop + wrap.offsetHeight * 0.3951;
       geo.d = wrap.offsetWidth * 64.9 / 1760;
     };
-    const paintDive = () => { dive.style.clipPath = `circle(${proxy.r.toFixed(1)}px at ${geo.cx.toFixed(1)}px ${geo.cy.toFixed(1)}px)`; };
+    const paintDive = () => { dive.style.transform = `translate3d(${geo.cx.toFixed(1)}px, ${geo.cy.toFixed(1)}px, 0) scale(${(proxy.r / 200).toFixed(3)})`; };
     measure(); paintDive();
     ST.addEventListener('refreshInit', () => { G.set(wrap, { scale: 1 }); });
     ST.addEventListener('refresh', () => { measure(); paintDive(); });
@@ -240,7 +260,7 @@ void main(){
         wipe.style.left = (kr.left - pr.left + 2) + 'px'; wipe.style.top = (kr.top - pr.top + kr.height / 2) + 'px';
       };
       const tl = G.timeline({ scrollTrigger: {
-        trigger: ch, start: 'top top', end: '+=150%', scrub: 0.5, pin: pin, anticipatePin: 1, onRefresh: placeWipe
+        trigger: ch, start: 'top top', end: 'bottom bottom', scrub: touch ? 0.2 : 0.5, invalidateOnRefresh: true, onRefresh: placeWipe
       } });
       chapters.set(ch, { st: tl.scrollTrigger, next });
       tl.fromTo(kick, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.08 }, 0)
@@ -249,24 +269,33 @@ void main(){
         .fromTo($('.chapter__ghost', ch), { opacity: 0, x: 80 }, { opacity: 0.55, x: 0, duration: 0.5 }, 0.05)
         .to($$('.chapter__w > span', ch), { yPercent: -108, duration: 0.12, stagger: 0.05, ease: 'power2.in' }, 0.7)
         .to([kick, $('.chapter__rule', ch)], { opacity: 0, duration: 0.08 }, 0.72)
-        .fromTo(wipe, { scale: 0 }, { scale: 1, duration: 0.24, ease: 'power2.in' }, 0.76);
+        .fromTo(wipe, { scale: 0 }, { scale: () => 3 * Math.max(window.innerWidth, window.innerHeight) / 400, force3D: true, duration: 0.24, ease: 'power2.in' }, 0.76);
     });
 
     /* worlds: always read from where the page is now, so the same spot has the same colours
        in either scroll direction and after anything changes the page's height */
-    const worldSecs = $$('body [data-world]');
+    const worldSecs = $$('body [data-world]').map(sec => ({ sec, box: sec.closest('.hero-run') || sec, ch: chapters.get(sec), top: 0 }));
+    let vh = window.innerHeight;
     const syncWorld = () => {
       if (html.classList.contains('is-intro')) return;
+      const y = window.scrollY;
       let name = null;
-      worldSecs.forEach(sec => {
-        const ch = chapters.get(sec);
-        if (sec.getBoundingClientRect().top > window.innerHeight * (ch ? 0.18 : 0.55)) return;
+      worldSecs.forEach(({ sec, ch, top }) => {
+        if (top - y > vh * (ch ? 0.18 : 0.55)) return;
         name = ch && ch.next && ch.st.progress > 0.9 ? ch.next : sec.dataset.world;
       });
       if (name) STAGE.world(name);
     };
+    // section tops are read once per layout change, never per scroll frame
+    const measureWorlds = () => {
+      const y = window.scrollY; vh = window.innerHeight;
+      worldSecs.forEach(w => { w.top = w.box.getBoundingClientRect().top + y; });
+      syncWorld();
+    };
+    measureWorlds();
+    new ResizeObserver(measureWorlds).observe(document.body);
     if (window.GORI_LENIS) window.GORI_LENIS.on('scroll', syncWorld); else window.addEventListener('scroll', syncWorld, { passive: true });
-    ST.addEventListener('refresh', syncWorld);
+    ST.addEventListener('refresh', measureWorlds);
 
     /* headings rise word by word */
     $$('main .h2, .foot .h2').forEach(h => {
@@ -281,18 +310,18 @@ void main(){
     makeScrubs();
 
     /* panels arrive tilted and land flat */
-    $$('[data-tilt]').forEach(el => G.fromTo(el, { rotationX: 22, y: 90, scale: 0.94, transformPerspective: 1400 }, {
-      rotationX: 0, y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 100%', end: 'top 42%', scrub: 0.6 }
+    $$('[data-tilt]').forEach(el => G.fromTo(el, touch ? { y: 60 } : { rotationX: 22, y: 90, scale: 0.94, transformPerspective: 1400 }, {
+      ...(touch ? {} : { rotationX: 0, scale: 1 }), y: 0, force3D: true, ease: 'none', scrollTrigger: { trigger: el, start: 'top 100%', end: 'top 42%', scrub: 0.6 }
     }));
 
     /* index rows slide in from alternating sides */
     $$('.row').forEach((row, i) => G.fromTo(row, { xPercent: i % 2 ? 7 : -7, opacity: 0.15 }, {
-      xPercent: 0, opacity: 1, ease: 'none', scrollTrigger: { trigger: row, start: 'top 98%', end: 'top 62%', scrub: 0.5 }
+      xPercent: 0, opacity: 1, force3D: true, ease: 'none', scrollTrigger: { trigger: row, start: 'top 98%', end: 'top 62%', scrub: 0.5 }
     }));
 
     /* film stills and screens drift at their own depth */
     $$('.screen--tip, .sloi__diploma, .formats__item--v').forEach(el => G.fromTo(el, { y: 60 }, {
-      y: -40, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true }
+      y: -40, force3D: true, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true }
     }));
 
     /* numbers count up */
@@ -324,7 +353,10 @@ void main(){
 
     /* experience: a red line follows you down the jobs */
     const jobs = $('.jobs');
-    if (jobs) G.fromTo(jobs, { '--p': 0 }, { '--p': 1, ease: 'none', scrollTrigger: { trigger: jobs, start: 'top 72%', end: 'bottom 72%', scrub: true } });
+    if (jobs) {
+      const line = document.createElement('li'); line.className = 'jobs__line'; line.setAttribute('aria-hidden', 'true'); jobs.prepend(line);
+      G.fromTo(line, { scaleY: 0 }, { scaleY: 1, force3D: true, ease: 'none', scrollTrigger: { trigger: jobs, start: 'top 72%', end: 'bottom 72%', scrub: true } });
+    }
 
     /* tool levels fill dot by dot */
     const dots = $$('.lvl i.f');
